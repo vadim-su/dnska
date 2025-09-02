@@ -22,14 +22,14 @@ func NewDNSRequest(data []byte) (*DNSRequest, error) {
 	data = data[12:]
 	questions, size, err := NewDNSQuestions(data, header.QuestionCount, originalMessage)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create dns request: %s", err)
+		return nil, fmt.Errorf("failed to create dns request: %s", err)
 	}
 
 	data = data[size:]
 
 	answers, _, err := NewDNSAnswers(data, header.AnswerRecordCount, originalMessage)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create dns request: %s", err)
+		return nil, fmt.Errorf("failed to create dns request: %s", err)
 	}
 
 	return &DNSRequest{

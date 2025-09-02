@@ -628,27 +628,27 @@ func TestInvalidDomainNames(t *testing.T) {
 		{
 			name:        "empty input",
 			input:       []byte{},
-			expectedErr: "Domain Name can't be empty",
+			expectedErr: "domain name can't be empty",
 		},
 		{
 			name:        "truncated after length",
 			input:       []byte{0x05},
-			expectedErr: "Not enough bytes in name's label",
+			expectedErr: "not enough bytes in name's label",
 		},
 		{
 			name:        "truncated in middle of label",
 			input:       []byte{0x05, 't', 'e'},
-			expectedErr: "Not enough bytes in name's label",
+			expectedErr: "not enough bytes in name's label",
 		},
 		{
 			name:        "missing null terminator",
 			input:       []byte{0x04, 't', 'e', 's', 't'},
-			expectedErr: "Domain Name can't be empty",
+			expectedErr: "domain name can't be empty",
 		},
 		{
 			name:        "label length exceeds remaining data",
 			input:       []byte{0x10, 't', 'e', 's', 't', 0x00},
-			expectedErr: "Not enough bytes in name's label",
+			expectedErr: "not enough bytes in name's label",
 		},
 	}
 

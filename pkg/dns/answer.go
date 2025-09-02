@@ -13,7 +13,7 @@ type DNSAnswer struct {
 func NewDNSAnswer(name []byte, class DNSClass, type_ DNSType, ttl uint32, data []byte) (*DNSAnswer, error) {
 	dnsName, _, err := NewDomainName(name)
 	if err != nil {
-		return nil, fmt.Errorf("Can't create DNS answer: %s", err)
+		return nil, fmt.Errorf("can't create DNS answer: %s", err)
 	}
 
 	return &DNSAnswer{
@@ -31,7 +31,7 @@ func NewDNSAnswers(data []byte, count uint16, originalMessage []byte) ([]DNSAnsw
 	for range count {
 		dnsName, domainDataSize, err := NewDomainNameWithDecompression(data, originalMessage)
 		if err != nil {
-			return nil, 0, fmt.Errorf("Can't create DNS question: %s", err)
+			return nil, 0, fmt.Errorf("can't create DNS question: %s", err)
 		}
 		answersDataSize += domainDataSize
 

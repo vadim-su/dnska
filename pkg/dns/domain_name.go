@@ -31,7 +31,7 @@ func NewDomainName(data []byte) (*DomainName, uint16, error) {
 
 	for {
 		if len(data) == 0 {
-			return nil, 0, fmt.Errorf("Domain Name can't be empty")
+			return nil, 0, fmt.Errorf("domain name can't be empty")
 		}
 
 		length = data[0]
@@ -42,7 +42,7 @@ func NewDomainName(data []byte) (*DomainName, uint16, error) {
 		}
 
 		if len(data[1:]) < int(length) {
-			return nil, 0, fmt.Errorf("Not enough bytes in name's label")
+			return nil, 0, fmt.Errorf("not enough bytes in name's label")
 		}
 
 		labels = append(labels, Label{length, data[1 : length+1]})
@@ -156,7 +156,7 @@ func NewDomainNameWithDecompression(
 
 	for {
 		if len(data) == 0 {
-			return nil, 0, fmt.Errorf("Domain Name can't be empty")
+			return nil, 0, fmt.Errorf("domain name can't be empty")
 		}
 
 		firstByte := data[0]
@@ -164,7 +164,7 @@ func NewDomainNameWithDecompression(
 		// Check if this is a compression pointer
 		if isCompressionPointer(firstByte) {
 			if len(data) < 2 {
-				return nil, 0, fmt.Errorf("Invalid compression pointer")
+				return nil, 0, fmt.Errorf("invalid compression pointer")
 			}
 
 			// Extract offset from pointer
@@ -173,7 +173,7 @@ func NewDomainNameWithDecompression(
 
 			// Follow the pointer to get remaining labels
 			if int(offset) >= len(originalMessage) {
-				return nil, 0, fmt.Errorf("Invalid compression offset")
+				return nil, 0, fmt.Errorf("invalid compression offset")
 			}
 
 			remainingDomain, _, err := NewDomainNameWithDecompression(
@@ -198,7 +198,7 @@ func NewDomainNameWithDecompression(
 		}
 
 		if len(data[1:]) < int(length) {
-			return nil, 0, fmt.Errorf("Not enough bytes in name's label")
+			return nil, 0, fmt.Errorf("not enough bytes in name's label")
 		}
 
 		labels = append(labels, Label{length, data[1 : length+1]})

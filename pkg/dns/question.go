@@ -11,7 +11,7 @@ type DNSQuestion struct {
 func NewDNSQuestion(name []byte, class DNSClass, type_ DNSType) (*DNSQuestion, error) {
 	dnsName, _, err := NewDomainName(name)
 	if err != nil {
-		return nil, fmt.Errorf("Can't create DNS question: %s", err)
+		return nil, fmt.Errorf("can't create DNS question: %s", err)
 	}
 
 	return &DNSQuestion{
@@ -24,7 +24,7 @@ func NewDNSQuestion(name []byte, class DNSClass, type_ DNSType) (*DNSQuestion, e
 func NewDNSQuestionFromBytes(data []byte) (*DNSQuestion, error) {
 	dnsName, size, err := NewDomainName(data)
 	if err != nil {
-		return nil, fmt.Errorf("Can't create DNS question: %s", err)
+		return nil, fmt.Errorf("can't create DNS question: %s", err)
 	}
 
 	data = data[size:] // Remove domain name data
@@ -46,12 +46,12 @@ func NewDNSQuestions(data []byte, count uint16, originalMessage []byte) ([]DNSQu
 	for range count {
 		dnsName, domainDataSize, err := NewDomainNameWithDecompression(data, originalMessage)
 		if err != nil {
-			return nil, 0, fmt.Errorf("Can't create DNS question: %s", err)
+			return nil, 0, fmt.Errorf("can't create DNS question: %s", err)
 		}
 		questionsDataSize += domainDataSize
 
 		if len(data[domainDataSize:]) < 4 {
-			return nil, 0, fmt.Errorf("Not enough bytes for class and type")
+			return nil, 0, fmt.Errorf("not enough bytes for class and type")
 		}
 
 		data = data[domainDataSize:] // Remove domain name data
