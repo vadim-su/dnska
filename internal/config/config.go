@@ -21,24 +21,24 @@ type Config struct {
 
 // ServerConfig holds server-specific configuration
 type ServerConfig struct {
-	Address         string        `yaml:"address"`
-	ReadTimeout     time.Duration `yaml:"read_timeout"`
-	WriteTimeout    time.Duration `yaml:"write_timeout"`
-	MaxConnections  int           `yaml:"max_connections"`
-	EnableTCP       bool          `yaml:"enable_tcp"`
-	EnableUDP       bool          `yaml:"enable_udp"`
-	EnableMetrics   bool          `yaml:"enable_metrics"`
-	EnableHealth    bool          `yaml:"enable_health"`
+	Address        string        `yaml:"address"`
+	ReadTimeout    time.Duration `yaml:"read_timeout"`
+	WriteTimeout   time.Duration `yaml:"write_timeout"`
+	MaxConnections int           `yaml:"max_connections"`
+	EnableTCP      bool          `yaml:"enable_tcp"`
+	EnableUDP      bool          `yaml:"enable_udp"`
+	EnableMetrics  bool          `yaml:"enable_metrics"`
+	EnableHealth   bool          `yaml:"enable_health"`
 }
 
 // ResolverConfig holds resolver-specific configuration
 type ResolverConfig struct {
-	Type            string        `yaml:"type"` // "recursive", "forward", "cache"
-	Timeout         time.Duration `yaml:"timeout"`
-	MaxRetries      int           `yaml:"max_retries"`
-	ForwardServers  []string      `yaml:"forward_servers"`
-	RootServers     []string      `yaml:"root_servers"`
-	RecursionDepth  int           `yaml:"recursion_depth"`
+	Type           string        `yaml:"type"` // "recursive", "forward", "cache"
+	Timeout        time.Duration `yaml:"timeout"`
+	MaxRetries     int           `yaml:"max_retries"`
+	ForwardServers []string      `yaml:"forward_servers"`
+	RootServers    []string      `yaml:"root_servers"`
+	RecursionDepth int           `yaml:"recursion_depth"`
 }
 
 // StorageConfig holds storage backend configuration
@@ -59,17 +59,17 @@ type APIConfig struct {
 
 // LoggingConfig holds logging configuration
 type LoggingConfig struct {
-	Level  string `yaml:"level"` // "debug", "info", "warn", "error"
+	Level  string `yaml:"level"`  // "debug", "info", "warn", "error"
 	Format string `yaml:"format"` // "json", "text"
 	Output string `yaml:"output"` // "stdout", "stderr", or file path
 }
 
 // ZoneConfig holds zone-specific configuration
 type ZoneConfig struct {
-	Name     string            `yaml:"name"`
-	File     string            `yaml:"file"`
-	Records  []RecordConfig    `yaml:"records"`
-	Options  map[string]string `yaml:"options"`
+	Name    string            `yaml:"name"`
+	File    string            `yaml:"file"`
+	Records []RecordConfig    `yaml:"records"`
+	Options map[string]string `yaml:"options"`
 }
 
 // RecordConfig holds individual record configuration

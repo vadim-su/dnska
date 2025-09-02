@@ -9,8 +9,8 @@ import (
 // MXRecord represents an MX record (mail exchange)
 type MXRecord struct {
 	BaseRecord
-	preference uint16    // Mail server preference (lower is higher priority)
-	mailServer string   // Mail server domain name
+	preference uint16 // Mail server preference (lower is higher priority)
+	mailServer string // Mail server domain name
 }
 
 // NewMXRecord creates a new MX record

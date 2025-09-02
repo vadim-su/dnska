@@ -31,13 +31,13 @@ type ResolutionResult struct {
 
 // ResolverConfig holds configuration for resolvers
 type ResolverConfig struct {
-	Timeout         time.Duration // Timeout for resolution attempts
-	MaxRetries      int           // Maximum number of retries
-	CacheEnabled    bool          // Whether caching is enabled
-	CacheTTL        time.Duration // Default TTL for cached records
-	ForwardServers  []string      // List of forward DNS servers
-	RootServers     []string      // List of root DNS servers
-	RecursionDepth  int           // Maximum recursion depth
+	Timeout        time.Duration // Timeout for resolution attempts
+	MaxRetries     int           // Maximum number of retries
+	CacheEnabled   bool          // Whether caching is enabled
+	CacheTTL       time.Duration // Default TTL for cached records
+	ForwardServers []string      // List of forward DNS servers
+	RootServers    []string      // List of root DNS servers
+	RecursionDepth int           // Maximum recursion depth
 }
 
 // DefaultResolverConfig returns a default resolver configuration
@@ -46,7 +46,7 @@ func DefaultResolverConfig() *ResolverConfig {
 		Timeout:        5 * time.Second,
 		MaxRetries:     3,
 		CacheEnabled:   true,
-		CacheTTL:       300 * time.Second, // 5 minutes
+		CacheTTL:       300 * time.Second,                    // 5 minutes
 		ForwardServers: []string{"8.8.8.8:53", "8.8.4.4:53"}, // Google DNS
 		RootServers: []string{
 			"a.root-servers.net:53",
@@ -87,9 +87,9 @@ func NewRecursiveResolver(config *ResolverConfig) (*RecursiveResolver, error) {
 
 // ForwardResolver implements forwarding DNS resolution
 type ForwardResolver struct {
-	config   *ResolverConfig
-	servers  []string
-	client   *net.UDPConn
+	config  *ResolverConfig
+	servers []string
+	client  *net.UDPConn
 }
 
 // NewForwardResolver creates a new forward resolver

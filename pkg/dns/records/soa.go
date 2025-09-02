@@ -10,13 +10,13 @@ import (
 // SOARecord represents an SOA record (Start of Authority)
 type SOARecord struct {
 	BaseRecord
-	primaryNS     string        // Primary name server
-	responsible   string        // Responsible person (email)
-	serial        uint32        // Zone serial number
-	refresh       time.Duration // Refresh interval
-	retry         time.Duration // Retry interval
-	expire        time.Duration // Expire interval
-	minimum       time.Duration // Minimum TTL
+	primaryNS   string        // Primary name server
+	responsible string        // Responsible person (email)
+	serial      uint32        // Zone serial number
+	refresh     time.Duration // Refresh interval
+	retry       time.Duration // Retry interval
+	expire      time.Duration // Expire interval
+	minimum     time.Duration // Minimum TTL
 }
 
 // NewSOARecord creates a new SOA record
@@ -27,14 +27,14 @@ func NewSOARecord(
 	ttl uint32,
 ) *SOARecord {
 	return &SOARecord{
-		BaseRecord: NewBaseRecord(name, types.CLASS_IN, ttl),
-		primaryNS:  primaryNS,
+		BaseRecord:  NewBaseRecord(name, types.CLASS_IN, ttl),
+		primaryNS:   primaryNS,
 		responsible: responsible,
-		serial:     serial,
-		refresh:    refresh,
-		retry:      retry,
-		expire:     expire,
-		minimum:    minimum,
+		serial:      serial,
+		refresh:     refresh,
+		retry:       retry,
+		expire:      expire,
+		minimum:     minimum,
 	}
 }
 

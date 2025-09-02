@@ -14,7 +14,7 @@ import (
 type MemoryStorage struct {
 	mu      sync.RWMutex
 	records map[string]map[types.DNSType][]records.DNSRecord // name -> type -> records
-	zones   map[string]bool                                   // set of zones
+	zones   map[string]bool                                  // set of zones
 }
 
 // NewMemoryStorage creates a new in-memory storage instance
