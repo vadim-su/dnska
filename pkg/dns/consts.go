@@ -21,6 +21,7 @@ const (
 	TYPE_MINFO DNSType = 14 // mailbox or mail list information
 	TYPE_MX    DNSType = 15 // mail exchange
 	TYPE_TXT   DNSType = 16 // text strings
+	TYPE_AAAA  DNSType = 28 // IPv6 host address
 )
 
 // DNSClass represents a DNS class

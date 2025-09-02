@@ -1,5 +1,7 @@
 package dns
 
+import "fmt"
+
 // DNSResponse represents a full DNS response message.
 type DNSResponse struct {
 	Header    DNSHeader
@@ -9,6 +11,18 @@ type DNSResponse struct {
 
 // Create a new DNS response from raw byte data
 func NewDNSResponse(data []byte) (*DNSResponse, error) {
+	// Validate minimum required length for DNS header (12 bytes)
+	if len(data) == 0 {
+		return nil, fmt.Errorf("invalid DNS response: empty data provided")
+	}
+
+	if len(data) < 12 {
+		return nil, fmt.Errorf(
+			"invalid DNS response: data too short (%d bytes, need at least 12 for header)",
+			len(data),
+		)
+	}
+
 	originalMessage := data // Keep reference to original message for decompression
 
 	header := NewDNSHeader(
