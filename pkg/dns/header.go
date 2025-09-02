@@ -9,7 +9,14 @@ type DNSHeader struct {
 	AdditionalRecordCount uint16
 }
 
-func NewDNSHeader(id uint16, flags DNSFlag, questionCount, answerRecordCount, authorityRecordCount, additionalRecordCount uint16) *DNSHeader {
+func NewDNSHeader(
+	id uint16,
+	flags DNSFlag,
+	questionCount,
+	answerRecordCount,
+	authorityRecordCount,
+	additionalRecordCount uint16,
+) *DNSHeader {
 	return &DNSHeader{
 		ID:                    id,
 		Flags:                 flags,
