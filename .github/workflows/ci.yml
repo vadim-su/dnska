@@ -1,4 +1,5 @@
 # Main CI pipeline - runs comprehensive checks on every push/PR
+# Tests focus on Linux (primary deployment target) with limited cross-platform testing
 # For Go version compatibility testing, see test.yml (runs weekly)
 name: CI
 
@@ -36,13 +37,9 @@ jobs:
           fi
           echo "All Go files are properly formatted"
 
-  # Tests on all platforms
   test:
     name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,7 +72,6 @@ jobs:
         run: go test -v -race -coverprofile=coverage.out ./...
 
       - name: Upload coverage artifact (for coverage job)
-        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
