@@ -1,9 +1,45 @@
-package dns
+package message
 
 import (
 	"bytes"
 	"reflect"
 	"testing"
+
+	"github.com/vadim-su/dnska/pkg/dns/types"
+	"github.com/vadim-su/dnska/pkg/dns/utils"
+)
+
+// Helper function for checking if slice contains an element
+func contains[T comparable](slice []T, item T) bool {
+	for _, element := range slice {
+		if element == item {
+			return true
+		}
+	}
+	return false
+}
+
+// Alias types for easier usage
+type DNSFlag = types.DNSFlag
+
+// Constants from types package
+const (
+	TYPE_A    = types.TYPE_A
+	TYPE_AAAA = types.TYPE_AAAA
+	CLASS_IN  = types.CLASS_IN
+
+	FLAG_QR_QUERY              = types.FLAG_QR_QUERY
+	FLAG_QR_RESPONSE           = types.FLAG_QR_RESPONSE
+	FLAG_OPCODE_STANDARD       = types.FLAG_OPCODE_STANDARD
+	FLAG_OPCODE_INVERSE        = types.FLAG_OPCODE_INVERSE
+	FLAG_OPCODE_STATUS         = types.FLAG_OPCODE_STATUS
+	FLAG_RD_RECURSION_DESIRED  = types.FLAG_RD_RECURSION_DESIRED
+	FLAG_AA_AUTHORITATIVE      = types.FLAG_AA_AUTHORITATIVE
+	FLAG_TC_TRUNCATED          = types.FLAG_TC_TRUNCATED
+	FLAG_RCODE_NO_ERROR        = types.FLAG_RCODE_NO_ERROR
+	FLAG_RCODE_NOT_IMPLEMENTED = types.FLAG_RCODE_NOT_IMPLEMENTED
+
+	BIT_OPCODE_START = types.BIT_OPCODE_START
 )
 
 func TestNewDNSResponse(t *testing.T) {
@@ -52,26 +88,26 @@ func TestNewDNSResponse(t *testing.T) {
 				},
 				Questions: []DNSQuestion{
 					{
-						Name: DomainName{
-							labels: []Label{
-								{length: 7, content: []byte("example")},
-								{length: 3, content: []byte("com")},
+						Name: utils.DomainName{
+							Labels: []utils.Label{
+								{Length: 7, Content: []byte("example")},
+								{Length: 3, Content: []byte("com")},
 							},
 						},
-						Type:  dnsTypeClassToBytes(TYPE_A),
-						Class: dnsTypeClassToBytes(CLASS_IN),
+						Type:  types.DnsTypeClassToBytes(types.TYPE_A),
+						Class: types.DnsTypeClassToBytes(types.CLASS_IN),
 					},
 				},
 				Answers: []DNSAnswer{
 					{
-						name: DomainName{
-							labels: []Label{
-								{length: 7, content: []byte("example")},
-								{length: 3, content: []byte("com")},
+						name: utils.DomainName{
+							Labels: []utils.Label{
+								{Length: 7, Content: []byte("example")},
+								{Length: 3, Content: []byte("com")},
 							},
 						},
-						type_: dnsTypeClassToBytes(TYPE_A),
-						class: dnsTypeClassToBytes(CLASS_IN),
+						type_: types.DnsTypeClassToBytes(types.TYPE_A),
+						class: types.DnsTypeClassToBytes(types.CLASS_IN),
 						ttl:   [4]byte{0x00, 0x00, 0x01, 0x2C},
 						data:  []byte{192, 0, 2, 1},
 					},
@@ -117,26 +153,26 @@ func TestNewDNSResponse(t *testing.T) {
 				},
 				Questions: []DNSQuestion{
 					{
-						Name: DomainName{
-							labels: []Label{
-								{length: 1, content: []byte("a")},
-								{length: 3, content: []byte("com")},
+						Name: utils.DomainName{
+							Labels: []utils.Label{
+								{Length: 1, Content: []byte("a")},
+								{Length: 3, Content: []byte("com")},
 							},
 						},
-						Type:  dnsTypeClassToBytes(TYPE_A),
-						Class: dnsTypeClassToBytes(CLASS_IN),
+						Type:  types.DnsTypeClassToBytes(types.TYPE_A),
+						Class: types.DnsTypeClassToBytes(types.CLASS_IN),
 					},
 				},
 				Answers: []DNSAnswer{
 					{
-						name: DomainName{
-							labels: []Label{
-								{length: 1, content: []byte("a")},
-								{length: 3, content: []byte("com")},
+						name: utils.DomainName{
+							Labels: []utils.Label{
+								{Length: 1, Content: []byte("a")},
+								{Length: 3, Content: []byte("com")},
 							},
 						},
-						type_: dnsTypeClassToBytes(TYPE_A),
-						class: dnsTypeClassToBytes(CLASS_IN),
+						type_: types.DnsTypeClassToBytes(types.TYPE_A),
+						class: types.DnsTypeClassToBytes(types.CLASS_IN),
 						ttl:   [4]byte{0x00, 0x00, 0x00, 0x3C},
 						data:  []byte{10, 0, 0, 1},
 					},
@@ -206,26 +242,26 @@ func TestNewDNSResponse(t *testing.T) {
 				},
 				Questions: []DNSQuestion{
 					{
-						Name: DomainName{
-							labels: []Label{
-								{length: 7, content: []byte("example")},
-								{length: 3, content: []byte("com")},
+						Name: utils.DomainName{
+							Labels: []utils.Label{
+								{Length: 7, Content: []byte("example")},
+								{Length: 3, Content: []byte("com")},
 							},
 						},
-						Type:  dnsTypeClassToBytes(TYPE_A),
-						Class: dnsTypeClassToBytes(CLASS_IN),
+						Type:  types.DnsTypeClassToBytes(types.TYPE_A),
+						Class: types.DnsTypeClassToBytes(types.CLASS_IN),
 					},
 				},
 				Answers: []DNSAnswer{
 					{
-						name: DomainName{
-							labels: []Label{
-								{length: 7, content: []byte("example")},
-								{length: 3, content: []byte("com")},
+						name: utils.DomainName{
+							Labels: []utils.Label{
+								{Length: 7, Content: []byte("example")},
+								{Length: 3, Content: []byte("com")},
 							},
 						},
-						type_: dnsTypeClassToBytes(TYPE_A),
-						class: dnsTypeClassToBytes(CLASS_IN),
+						type_: types.DnsTypeClassToBytes(types.TYPE_A),
+						class: types.DnsTypeClassToBytes(types.CLASS_IN),
 						ttl:   [4]byte{0x00, 0x00, 0x01, 0x2C},
 						data:  []byte{192, 0, 2, 1},
 					},
@@ -244,7 +280,7 @@ func TestNewDNSResponse(t *testing.T) {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
-				if test.errContains != "" && !contains(err.Error(), test.errContains) {
+				if test.errContains != "" && !containsString(err.Error(), test.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", test.errContains, err.Error())
 				}
 				return
@@ -382,7 +418,7 @@ func TestNewDNSResponseErrorCases(t *testing.T) {
 				return
 			}
 
-			if test.errContains != "" && !contains(err.Error(), test.errContains) {
+			if test.errContains != "" && !containsString(err.Error(), test.errContains) {
 				t.Errorf("Expected error to contain '%s', got '%s'", test.errContains, err.Error())
 			}
 		})
@@ -971,8 +1007,8 @@ func TestDNSResponseRoundTrip(t *testing.T) {
 
 // Helper functions for tests
 
-func createTestDNSQuestion(domain string, recordType DNSType, class DNSClass) DNSQuestion {
-	var labels []Label
+func createTestDNSQuestion(domain string, recordType types.DNSType, class types.DNSClass) DNSQuestion {
+	var labels []utils.Label
 	if domain != "." {
 		// Remove trailing dot if present
 		domain = domain[:len(domain)-1]
@@ -1001,25 +1037,25 @@ func createTestDNSQuestion(domain string, recordType DNSType, class DNSClass) DN
 
 		for _, part := range parts {
 			if len(part) > 0 {
-				labels = append(labels, Label{
-					length:  uint8(len(part)),
-					content: []byte(part),
+				labels = append(labels, utils.Label{
+					Length:  uint8(len(part)),
+					Content: []byte(part),
 				})
 			}
 		}
 	}
 
 	return DNSQuestion{
-		Name: DomainName{
-			labels: labels,
+		Name: utils.DomainName{
+			Labels: labels,
 		},
-		Type:  dnsTypeClassToBytes(recordType),
-		Class: dnsTypeClassToBytes(class),
+		Type:  types.DnsTypeClassToBytes(recordType),
+		Class: types.DnsTypeClassToBytes(class),
 	}
 }
 
-func createTestDNSAnswer(domain string, recordType DNSType, class DNSClass, ttl uint32, data []byte) DNSAnswer {
-	var labels []Label
+func createTestDNSAnswer(domain string, recordType types.DNSType, class types.DNSClass, ttl uint32, data []byte) DNSAnswer {
+	var labels []utils.Label
 	if domain != "." {
 		// Remove trailing dot if present
 		domain = domain[:len(domain)-1]
@@ -1048,9 +1084,9 @@ func createTestDNSAnswer(domain string, recordType DNSType, class DNSClass, ttl 
 
 		for _, part := range parts {
 			if len(part) > 0 {
-				labels = append(labels, Label{
-					length:  uint8(len(part)),
-					content: []byte(part),
+				labels = append(labels, utils.Label{
+					Length:  uint8(len(part)),
+					Content: []byte(part),
 				})
 			}
 		}
@@ -1064,24 +1100,24 @@ func createTestDNSAnswer(domain string, recordType DNSType, class DNSClass, ttl 
 	}
 
 	return DNSAnswer{
-		name: DomainName{
-			labels: labels,
+		name: utils.DomainName{
+			Labels: labels,
 		},
-		type_: dnsTypeClassToBytes(recordType),
-		class: dnsTypeClassToBytes(class),
+		type_: types.DnsTypeClassToBytes(recordType),
+		class: types.DnsTypeClassToBytes(class),
 		ttl:   ttlBytes,
 		data:  data,
 	}
 }
 
 func compareDNSQuestions(a, b DNSQuestion) bool {
-	return reflect.DeepEqual(a.Name.labels, b.Name.labels) &&
+	return reflect.DeepEqual(a.Name.Labels, b.Name.Labels) &&
 		bytes.Equal(a.Type[:], b.Type[:]) &&
 		bytes.Equal(a.Class[:], b.Class[:])
 }
 
 func compareDNSAnswers(a, b DNSAnswer) bool {
-	return reflect.DeepEqual(a.name.labels, b.name.labels) &&
+	return reflect.DeepEqual(a.name.Labels, b.name.Labels) &&
 		bytes.Equal(a.type_[:], b.type_[:]) &&
 		bytes.Equal(a.class[:], b.class[:]) &&
 		bytes.Equal(a.ttl[:], b.ttl[:]) &&

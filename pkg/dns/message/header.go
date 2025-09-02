@@ -1,9 +1,13 @@
-package dns
+package message
+
+import (
+	"github.com/vadim-su/dnska/pkg/dns/types"
+)
 
 // DNSFlag represents the flags in a DNS header
 type DNSHeader struct {
 	ID                    uint16
-	Flags                 DNSFlag // 2 bytes
+	Flags                 types.DNSFlag // 2 bytes
 	QuestionCount         uint16
 	AnswerRecordCount     uint16
 	AuthorityRecordCount  uint16
@@ -13,7 +17,7 @@ type DNSHeader struct {
 // Create a new DNS header
 func NewDNSHeader(
 	id uint16,
-	flags DNSFlag,
+	flags types.DNSFlag,
 	questionCount,
 	answerRecordCount,
 	authorityRecordCount,

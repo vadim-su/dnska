@@ -1,17 +1,19 @@
-package dns
+package message
 
 import (
 	"bytes"
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/vadim-su/dnska/pkg/dns/utils"
 )
 
 func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 	tests := []struct {
 		name               string
 		question           DNSQuestion
-		compressionMap     *CompressionMap
+		compressionMap     *utils.CompressionMap
 		currentOffset      uint16
 		expectedResult     []byte
 		expectedMapEntries int
@@ -20,16 +22,16 @@ func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 		{
 			name: "simple question without existing compression",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("com")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("com")},
 					},
 				},
 				Class: [2]byte{0x00, 0x01}, // IN
 				Type:  [2]byte{0x00, 0x01}, // A
 			},
-			compressionMap: NewCompressionMap(),
+			compressionMap: utils.NewCompressionMap(),
 			currentOffset:  12,
 			expectedResult: []byte{
 				0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e',
@@ -44,18 +46,18 @@ func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 		{
 			name: "question with compression pointer for full domain",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("com")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("com")},
 					},
 				},
 				Class: [2]byte{0x00, 0x01}, // IN
 				Type:  [2]byte{0x00, 0x1C}, // AAAA
 			},
-			compressionMap: func() *CompressionMap {
-				compressionMap := NewCompressionMap()
-				compressionMap.nameToOffset["example.com."] = 20
+			compressionMap: func() *utils.CompressionMap {
+				compressionMap := utils.NewCompressionMap()
+				compressionMap.SetNameOffset("example.com.", 20)
 				return compressionMap
 			}(),
 			currentOffset: 50,
@@ -70,19 +72,19 @@ func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 		{
 			name: "question with suffix compression",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 3, content: []byte("www")},
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("com")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 3, Content: []byte("www")},
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("com")},
 					},
 				},
 				Class: [2]byte{0x00, 0x01}, // IN
 				Type:  [2]byte{0x00, 0x0F}, // MX
 			},
-			compressionMap: func() *CompressionMap {
-				compressionMap := NewCompressionMap()
-				compressionMap.nameToOffset["example.com."] = 25
+			compressionMap: func() *utils.CompressionMap {
+				compressionMap := utils.NewCompressionMap()
+				compressionMap.SetNameOffset("example.com.", 25)
 				return compressionMap
 			}(),
 			currentOffset: 60,
@@ -98,13 +100,13 @@ func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 		{
 			name: "root domain question",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{},
+				Name: utils.DomainName{
+					Labels: []utils.Label{},
 				},
 				Class: [2]byte{0x00, 0x01}, // IN
 				Type:  [2]byte{0x00, 0x02}, // NS
 			},
-			compressionMap: NewCompressionMap(),
+			compressionMap: utils.NewCompressionMap(),
 			currentOffset:  100,
 			expectedResult: []byte{
 				0x00,       // Root domain
@@ -117,16 +119,16 @@ func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 		{
 			name: "question with zero offset",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("test")},
-						{length: 3, content: []byte("org")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("test")},
+						{Length: 3, Content: []byte("org")},
 					},
 				},
 				Class: [2]byte{0x00, 0x03}, // CH (Chaos)
 				Type:  [2]byte{0x00, 0x10}, // TXT
 			},
-			compressionMap: NewCompressionMap(),
+			compressionMap: utils.NewCompressionMap(),
 			currentOffset:  0,
 			expectedResult: []byte{
 				0x04, 't', 'e', 's', 't',
@@ -141,15 +143,15 @@ func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 		{
 			name: "question with maximum valid values",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 1, content: []byte("a")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 1, Content: []byte("a")},
 					},
 				},
 				Class: [2]byte{0xFF, 0xFF}, // Maximum class value
 				Type:  [2]byte{0xFF, 0xFF}, // Maximum type value
 			},
-			compressionMap: NewCompressionMap(),
+			compressionMap: utils.NewCompressionMap(),
 			currentOffset:  65535,
 			expectedResult: []byte{
 				0x01, 'a',
@@ -164,7 +166,7 @@ func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			initialMapSize := len(testCase.compressionMap.nameToOffset)
+			initialMapSize := len(testCase.compressionMap.GetNameToOffset())
 
 			result := testCase.question.ToBytesWithCompression(
 				testCase.compressionMap,
@@ -178,7 +180,7 @@ func TestDNSQuestionToBytesWithCompression(t *testing.T) {
 			}
 
 			// Verify compression map was updated appropriately
-			finalMapSize := len(testCase.compressionMap.nameToOffset)
+			finalMapSize := len(testCase.compressionMap.GetNameToOffset())
 			expectedFinalSize := initialMapSize + testCase.expectedMapEntries
 			if finalMapSize != expectedFinalSize {
 				t.Errorf("Compression map size mismatch: got %d entries, want %d entries",
@@ -197,7 +199,7 @@ func TestDNSQuestionToBytesWithCompressionEdgeCases(t *testing.T) {
 	tests := []struct {
 		name           string
 		question       DNSQuestion
-		compressionMap *CompressionMap
+		compressionMap *utils.CompressionMap
 		currentOffset  uint16
 		expectedLength int
 		description    string
@@ -205,18 +207,18 @@ func TestDNSQuestionToBytesWithCompressionEdgeCases(t *testing.T) {
 		{
 			name: "very long domain name",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 10, content: []byte("verylongname")[:10]},
-						{length: 15, content: []byte("anotherlongname")},
-						{length: 20, content: []byte("yetanotherverylong12")},
-						{length: 3, content: []byte("com")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 10, Content: []byte("verylongname")[:10]},
+						{Length: 15, Content: []byte("anotherlongname")},
+						{Length: 20, Content: []byte("yetanotherverylong12")},
+						{Length: 3, Content: []byte("com")},
 					},
 				},
 				Class: [2]byte{0x00, 0x01},
 				Type:  [2]byte{0x00, 0x01},
 			},
-			compressionMap: NewCompressionMap(),
+			compressionMap: utils.NewCompressionMap(),
 			currentOffset:  200,
 			expectedLength: 10 + 1 + 15 + 1 + 20 + 1 + 3 + 1 + 1 + 4, // labels + length bytes + null + class + type
 			description:    "Should handle very long domain names",
@@ -224,18 +226,15 @@ func TestDNSQuestionToBytesWithCompressionEdgeCases(t *testing.T) {
 		{
 			name: "empty compression map",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("test")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("test")},
 					},
 				},
 				Class: [2]byte{0x00, 0x01},
 				Type:  [2]byte{0x00, 0x01},
 			},
-			compressionMap: &CompressionMap{
-				nameToOffset: make(map[string]uint16),
-				message:      make([]byte, 0, 512),
-			},
+			compressionMap: utils.NewCompressionMap(),
 			currentOffset:  50,
 			expectedLength: 4 + 1 + 1 + 4, // label + length + null + class + type
 			description:    "Should work with empty compression map",
@@ -243,20 +242,20 @@ func TestDNSQuestionToBytesWithCompressionEdgeCases(t *testing.T) {
 		{
 			name: "compression map with many existing entries",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("net")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("net")},
 					},
 				},
 				Class: [2]byte{0x00, 0x01},
 				Type:  [2]byte{0x00, 0x01},
 			},
-			compressionMap: func() *CompressionMap {
-				compressionMap := NewCompressionMap()
+			compressionMap: func() *utils.CompressionMap {
+				compressionMap := utils.NewCompressionMap()
 				for index := range 100 {
 					key := fmt.Sprintf("domain%d.com.", index)
-					compressionMap.nameToOffset[key] = uint16(index * 20)
+					compressionMap.SetNameOffset(key, uint16(index*20))
 				}
 				return compressionMap
 			}(),
@@ -299,17 +298,17 @@ func TestDNSQuestionToBytesWithCompressionEdgeCases(t *testing.T) {
 
 func TestDNSQuestionToBytesWithCompressionRoundTrip(t *testing.T) {
 	originalQuestion := DNSQuestion{
-		Name: DomainName{
-			labels: []Label{
-				{length: 7, content: []byte("example")},
-				{length: 3, content: []byte("com")},
+		Name: utils.DomainName{
+			Labels: []utils.Label{
+				{Length: 7, Content: []byte("example")},
+				{Length: 3, Content: []byte("com")},
 			},
 		},
 		Class: [2]byte{0x00, 0x01}, // IN
 		Type:  [2]byte{0x00, 0x01}, // A
 	}
 
-	compressionMap := NewCompressionMap()
+	compressionMap := utils.NewCompressionMap()
 	currentOffset := uint16(12)
 
 	// Convert to bytes with compression
@@ -339,24 +338,25 @@ func TestDNSQuestionToBytesWithCompressionRoundTrip(t *testing.T) {
 	}
 
 	// Verify compression map was updated
-	if len(compressionMap.nameToOffset) == 0 {
+	if len(compressionMap.GetNameToOffset()) == 0 {
 		t.Error("Compression map should have been updated with domain name")
 	}
 
 	// Check that the domain was added to compression map
 	expectedDomain := "example.com."
-	if _, exists := compressionMap.nameToOffset[expectedDomain]; !exists {
+	nameToOffset := compressionMap.GetNameToOffset()
+	if _, exists := nameToOffset[expectedDomain]; !exists {
 		t.Errorf("Domain %s should be in compression map", expectedDomain)
 	}
 }
 
 func TestDNSQuestionToBytesWithCompressionConsistency(t *testing.T) {
 	question := DNSQuestion{
-		Name: DomainName{
-			labels: []Label{
-				{length: 4, content: []byte("test")},
-				{length: 7, content: []byte("example")},
-				{length: 3, content: []byte("org")},
+		Name: utils.DomainName{
+			Labels: []utils.Label{
+				{Length: 4, Content: []byte("test")},
+				{Length: 7, Content: []byte("example")},
+				{Length: 3, Content: []byte("org")},
 			},
 		},
 		Class: [2]byte{0x00, 0x01}, // IN
@@ -364,7 +364,7 @@ func TestDNSQuestionToBytesWithCompressionConsistency(t *testing.T) {
 	}
 
 	// Test multiple calls with the same parameters
-	compressionMap := NewCompressionMap()
+	compressionMap := utils.NewCompressionMap()
 	currentOffset := uint16(50)
 
 	result1 := question.ToBytesWithCompression(compressionMap, currentOffset)
@@ -398,10 +398,10 @@ func TestDNSQuestionToBytes(t *testing.T) {
 		{
 			name: "simple A record question",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("com")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("com")},
 					},
 				},
 				Class: [2]byte{0x00, 0x01}, // IN
@@ -419,8 +419,8 @@ func TestDNSQuestionToBytes(t *testing.T) {
 		{
 			name: "root domain NS question",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{},
+				Name: utils.DomainName{
+					Labels: []utils.Label{},
 				},
 				Class: [2]byte{0x00, 0x01}, // IN
 				Type:  [2]byte{0x00, 0x02}, // NS
@@ -435,11 +435,11 @@ func TestDNSQuestionToBytes(t *testing.T) {
 		{
 			name: "MX record question",
 			question: DNSQuestion{
-				Name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("mail")},
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("net")},
+				Name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("mail")},
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("net")},
 					},
 				},
 				Class: [2]byte{0x00, 0x01}, // IN
@@ -471,11 +471,11 @@ func TestDNSQuestionToBytes(t *testing.T) {
 
 func TestDNSQuestionToBytesRoundTrip(t *testing.T) {
 	originalQuestion := DNSQuestion{
-		Name: DomainName{
-			labels: []Label{
-				{length: 3, content: []byte("www")},
-				{length: 7, content: []byte("example")},
-				{length: 3, content: []byte("com")},
+		Name: utils.DomainName{
+			Labels: []utils.Label{
+				{Length: 3, Content: []byte("www")},
+				{Length: 7, Content: []byte("example")},
+				{Length: 3, Content: []byte("com")},
 			},
 		},
 		Class: [2]byte{0x00, 0x01}, // IN
@@ -507,22 +507,22 @@ func TestDNSQuestionToBytesRoundTrip(t *testing.T) {
 
 // Helper function for tests
 func createTestQuestion(domain string, class, recordType uint16) DNSQuestion {
-	var labels []Label
+	var labels []utils.Label
 	if domain != "." {
 		parts := strings.Split(strings.TrimSuffix(domain, "."), ".")
 		for _, part := range parts {
 			if len(part) > 0 {
-				labels = append(labels, Label{
-					length:  uint8(len(part)),
-					content: []byte(part),
+				labels = append(labels, utils.Label{
+					Length:  uint8(len(part)),
+					Content: []byte(part),
 				})
 			}
 		}
 	}
 
 	return DNSQuestion{
-		Name: DomainName{
-			labels: labels,
+		Name: utils.DomainName{
+			Labels: labels,
 		},
 		Class: [2]byte{byte(class >> 8), byte(class & 0xFF)},
 		Type:  [2]byte{byte(recordType >> 8), byte(recordType & 0xFF)},
@@ -532,16 +532,16 @@ func createTestQuestion(domain string, class, recordType uint16) DNSQuestion {
 func TestCreateTestQuestion(t *testing.T) {
 	question := createTestQuestion("example.com.", 1, 1)
 
-	if len(question.Name.labels) != 2 {
-		t.Errorf("Expected 2 labels, got %d", len(question.Name.labels))
+	if len(question.Name.Labels) != 2 {
+		t.Errorf("Expected 2 labels, got %d", len(question.Name.Labels))
 	}
 
-	if string(question.Name.labels[0].content) != "example" {
-		t.Errorf("Expected first label to be 'example', got '%s'", question.Name.labels[0].content)
+	if string(question.Name.Labels[0].Content) != "example" {
+		t.Errorf("Expected first label to be 'example', got '%s'", question.Name.Labels[0].Content)
 	}
 
-	if string(question.Name.labels[1].content) != "com" {
-		t.Errorf("Expected second label to be 'com', got '%s'", question.Name.labels[1].content)
+	if string(question.Name.Labels[1].Content) != "com" {
+		t.Errorf("Expected second label to be 'com', got '%s'", question.Name.Labels[1].Content)
 	}
 
 	expectedClass := [2]byte{0x00, 0x01}

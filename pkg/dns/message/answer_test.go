@@ -1,16 +1,35 @@
-package dns
+package message
 
 import (
 	"bytes"
+	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/vadim-su/dnska/pkg/dns/types"
+	"github.com/vadim-su/dnska/pkg/dns/utils"
 )
+
+// Helper function for checking if string contains substring
+func containsString(text, substr string) bool {
+	return strings.Contains(text, substr)
+}
+
+// Helper function for comparing domain names
+func compareDomainNames(a, b utils.DomainName) bool {
+	// Handle case where one is nil and other is empty slice
+	if len(a.Labels) == 0 && len(b.Labels) == 0 {
+		return true
+	}
+	return reflect.DeepEqual(a.Labels, b.Labels)
+}
 
 func TestNewDNSAnswer(t *testing.T) {
 	tests := []struct {
 		name        string
 		nameBytes   []byte
-		class       DNSClass
-		type_       DNSType
+		class       types.DNSClass
+		type_       types.DNSType
 		ttl         uint32
 		data        []byte
 		expected    *DNSAnswer
@@ -25,15 +44,15 @@ func TestNewDNSAnswer(t *testing.T) {
 				0x03, 'c', 'o', 'm',
 				0x00, // End of domain name
 			},
-			class: CLASS_IN,
-			type_: TYPE_A,
+			class: types.CLASS_IN,
+			type_: types.TYPE_A,
 			ttl:   300,
 			data:  []byte{192, 0, 2, 1}, // IP address 192.0.2.1
 			expected: &DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("com")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("com")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // CLASS_IN
@@ -51,15 +70,15 @@ func TestNewDNSAnswer(t *testing.T) {
 				0x03, 'o', 'r', 'g',
 				0x00, // End of domain name
 			},
-			class: CLASS_IN,
-			type_: TYPE_AAAA,
+			class: types.CLASS_IN,
+			type_: types.TYPE_AAAA,
 			ttl:   3600,
 			data:  []byte{0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, // IPv6 address
 			expected: &DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("test")},
-						{length: 3, content: []byte("org")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("test")},
+						{Length: 3, Content: []byte("org")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},                                                                                    // CLASS_IN
@@ -77,15 +96,15 @@ func TestNewDNSAnswer(t *testing.T) {
 				0x03, 'n', 'e', 't',
 				0x00, // End of domain name
 			},
-			class: CLASS_IN,
-			type_: TYPE_MX,
+			class: types.CLASS_IN,
+			type_: types.TYPE_MX,
 			ttl:   86400,
 			data:  []byte{0x00, 0x0A, 0x04, 'm', 'a', 'i', 'l', 0x07, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 0x03, 'n', 'e', 't', 0x00}, // Priority 10, mail.example.net
 			expected: &DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("net")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("net")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // CLASS_IN
@@ -101,13 +120,13 @@ func TestNewDNSAnswer(t *testing.T) {
 			nameBytes: []byte{
 				0x00, // Root domain
 			},
-			class: CLASS_IN,
-			type_: TYPE_NS,
+			class: types.CLASS_IN,
+			type_: types.TYPE_NS,
 			ttl:   172800,
 			data:  []byte{0x01, 'a', 0x0C, 'r', 'o', 'o', 't', '-', 's', 'e', 'r', 'v', 'e', 'r', 's', 0x03, 'n', 'e', 't', 0x00}, // a.root-servers.net
 			expected: &DNSAnswer{
-				name: DomainName{
-					labels: []Label{},
+				name: utils.DomainName{
+					Labels: []utils.Label{},
 				},
 				class: [2]byte{0x00, 0x01},             // CLASS_IN
 				type_: [2]byte{0x00, 0x02},             // TYPE_NS
@@ -123,14 +142,14 @@ func TestNewDNSAnswer(t *testing.T) {
 				0x04, 't', 'e', 's', 't',
 				0x00, // End of domain name
 			},
-			class: CLASS_IN,
-			type_: TYPE_TXT,
+			class: types.CLASS_IN,
+			type_: types.TYPE_TXT,
 			ttl:   0,
 			data:  []byte{0x0B, 'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'}, // "hello world"
 			expected: &DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("test")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("test")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // CLASS_IN
@@ -147,14 +166,14 @@ func TestNewDNSAnswer(t *testing.T) {
 				0x03, 'm', 'a', 'x',
 				0x00, // End of domain name
 			},
-			class: CLASS_IN,
-			type_: TYPE_A,
+			class: types.CLASS_IN,
+			type_: types.TYPE_A,
 			ttl:   4294967295, // Maximum uint32
 			data:  []byte{10, 0, 0, 1},
 			expected: &DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 3, content: []byte("max")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 3, Content: []byte("max")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // CLASS_IN
@@ -171,14 +190,14 @@ func TestNewDNSAnswer(t *testing.T) {
 				0x05, 'e', 'm', 'p', 't', 'y',
 				0x00, // End of domain name
 			},
-			class: CLASS_IN,
-			type_: TYPE_A,
+			class: types.CLASS_IN,
+			type_: types.TYPE_A,
 			ttl:   300,
 			data:  []byte{},
 			expected: &DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 5, content: []byte("empty")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 5, Content: []byte("empty")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // CLASS_IN
@@ -195,14 +214,14 @@ func TestNewDNSAnswer(t *testing.T) {
 				0x04, 't', 'e', 's', 't',
 				0x00, // End of domain name
 			},
-			class: CLASS_CH,
-			type_: TYPE_TXT,
+			class: types.CLASS_CH,
+			type_: types.TYPE_TXT,
 			ttl:   0,
 			data:  []byte{0x07, 'c', 'h', 'a', 'o', 's', '!', '!'},
 			expected: &DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("test")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("test")},
 					},
 				},
 				class: [2]byte{0x00, 0x03},             // CLASS_CH
@@ -216,8 +235,8 @@ func TestNewDNSAnswer(t *testing.T) {
 		{
 			name:        "invalid domain name - empty data",
 			nameBytes:   []byte{},
-			class:       CLASS_IN,
-			type_:       TYPE_A,
+			class:       types.CLASS_IN,
+			type_:       types.TYPE_A,
 			ttl:         300,
 			data:        []byte{192, 0, 2, 1},
 			expected:    nil,
@@ -230,8 +249,8 @@ func TestNewDNSAnswer(t *testing.T) {
 			nameBytes: []byte{
 				0x07, 'e', 'x', 'a', 'm', // Incomplete label
 			},
-			class:       CLASS_IN,
-			type_:       TYPE_A,
+			class:       types.CLASS_IN,
+			type_:       types.TYPE_A,
 			ttl:         300,
 			data:        []byte{192, 0, 2, 1},
 			expected:    nil,
@@ -246,8 +265,8 @@ func TestNewDNSAnswer(t *testing.T) {
 				0x03, 'c', 'o', 'm',
 				// Missing null terminator
 			},
-			class:       CLASS_IN,
-			type_:       TYPE_A,
+			class:       types.CLASS_IN,
+			type_:       types.TYPE_A,
 			ttl:         300,
 			data:        []byte{192, 0, 2, 1},
 			expected:    nil,
@@ -266,7 +285,7 @@ func TestNewDNSAnswer(t *testing.T) {
 					t.Errorf("Expected error but got none")
 					return
 				}
-				if testCase.errContains != "" && !contains(err.Error(), testCase.errContains) {
+				if testCase.errContains != "" && !containsString(err.Error(), testCase.errContains) {
 					t.Errorf("Expected error to contain '%s', got '%s'", testCase.errContains, err.Error())
 				}
 				if result != nil {
@@ -323,10 +342,10 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "simple A record",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("com")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("com")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // IN
@@ -350,9 +369,9 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "AAAA record with IPv6",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("test")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("test")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // IN
@@ -377,8 +396,8 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "root domain NS record",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{},
+				name: utils.DomainName{
+					Labels: []utils.Label{},
 				},
 				class: [2]byte{0x00, 0x01},             // IN
 				type_: [2]byte{0x00, 0x02},             // NS
@@ -400,11 +419,11 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "TXT record with text data",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("test")},
-						{length: 7, content: []byte("example")},
-						{length: 3, content: []byte("org")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("test")},
+						{Length: 7, Content: []byte("example")},
+						{Length: 3, Content: []byte("org")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // IN
@@ -430,9 +449,9 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "record with zero TTL",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 5, content: []byte("cache")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 5, Content: []byte("cache")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // IN
@@ -455,9 +474,9 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "record with maximum TTL",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 3, content: []byte("max")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 3, Content: []byte("max")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // IN
@@ -480,9 +499,9 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "record with empty data",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 5, content: []byte("empty")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 5, Content: []byte("empty")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // IN
@@ -505,9 +524,9 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "large data record",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("test")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("test")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},             // IN
@@ -533,10 +552,10 @@ func TestDNSAnswerToBytes(t *testing.T) {
 		{
 			name: "Chaos class record",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 7, content: []byte("version")},
-						{length: 4, content: []byte("bind")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 7, Content: []byte("version")},
+						{Length: 4, Content: []byte("bind")},
 					},
 				},
 				class: [2]byte{0x00, 0x03},             // CH (Chaos)
@@ -587,10 +606,10 @@ func TestDNSAnswerToBytes(t *testing.T) {
 func TestDNSAnswerToBytesRoundTrip(t *testing.T) {
 	// Create an answer, convert to bytes, then verify structure
 	originalAnswer := DNSAnswer{
-		name: DomainName{
-			labels: []Label{
-				{length: 7, content: []byte("example")},
-				{length: 3, content: []byte("com")},
+		name: utils.DomainName{
+			Labels: []utils.Label{
+				{Length: 7, Content: []byte("example")},
+				{Length: 3, Content: []byte("com")},
 			},
 		},
 		class: [2]byte{0x00, 0x01},             // IN
@@ -633,8 +652,8 @@ func TestNewDNSAnswerRoundTrip(t *testing.T) {
 		0x03, 'o', 'r', 'g',
 		0x00, // End of domain name
 	}
-	class := CLASS_IN
-	recordType := TYPE_MX
+	class := types.CLASS_IN
+	recordType := types.TYPE_MX
 	ttl := uint32(3600)
 	data := []byte{0x00, 0x0A, 0x04, 'm', 'a', 'i', 'l', 0x04, 't', 'e', 's', 't', 0x00} // Priority 10, mail.test
 
@@ -655,13 +674,13 @@ func TestNewDNSAnswerRoundTrip(t *testing.T) {
 	}
 
 	// Verify class
-	expectedClass := dnsTypeClassToBytes(class)
+	expectedClass := types.DnsTypeClassToBytes(class)
 	if !bytes.Equal(answer.class[:], expectedClass[:]) {
 		t.Errorf("Class mismatch: got %v, want %v", answer.class, expectedClass)
 	}
 
 	// Verify type
-	expectedType := dnsTypeClassToBytes(recordType)
+	expectedType := types.DnsTypeClassToBytes(recordType)
 	if !bytes.Equal(answer.type_[:], expectedType[:]) {
 		t.Errorf("Type mismatch: got %v, want %v", answer.type_, expectedType)
 	}
@@ -698,9 +717,9 @@ func TestDNSAnswerEdgeCases(t *testing.T) {
 		{
 			name: "answer with very large data",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 4, content: []byte("huge")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 4, Content: []byte("huge")},
 					},
 				},
 				class: [2]byte{0x00, 0x01},
@@ -713,8 +732,8 @@ func TestDNSAnswerEdgeCases(t *testing.T) {
 		{
 			name: "answer with all zero values",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{},
+				name: utils.DomainName{
+					Labels: []utils.Label{},
 				},
 				class: [2]byte{0x00, 0x00},
 				type_: [2]byte{0x00, 0x00},
@@ -726,9 +745,9 @@ func TestDNSAnswerEdgeCases(t *testing.T) {
 		{
 			name: "answer with maximum values",
 			answer: DNSAnswer{
-				name: DomainName{
-					labels: []Label{
-						{length: 1, content: []byte("a")},
+				name: utils.DomainName{
+					Labels: []utils.Label{
+						{Length: 1, Content: []byte("a")},
 					},
 				},
 				class: [2]byte{0xFF, 0xFF},

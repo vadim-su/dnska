@@ -1,0 +1,53 @@
+# Basic DNS Server Configuration
+# Minimal configuration for getting started
+
+# Server configuration
+server:
+  address: "127.0.0.1:53"
+  read_timeout: 5s
+  write_timeout: 5s
+  max_connections: 100
+  enable_tcp: true
+  enable_udp: true
+  enable_metrics: false
+  enable_health: false
+
+# Resolver configuration
+resolver:
+  type: "forward"
+  timeout: 5s
+  max_retries: 2
+  forward_servers:
+    - "8.8.8.8:53"
+    - "8.8.4.4:53"
+  recursion_depth: 5
+
+# Storage configuration
+storage:
+  type: "memory"
+
+# API configuration (disabled)
+api:
+  enabled: false
+
+# Logging configuration
+logging:
+  level: "info"
+  format: "text"
+  output: "stdout"
+
+# Cache configuration
+cache:
+  enabled: true
+  size: 100
+  ttl: 60s
+  type: "lru"
+
+# Basic zones
+zones:
+  - name: "localhost"
+    records:
+      - name: "@"
+        type: "A"
+        value: "127.0.0.1"
+        ttl: 300

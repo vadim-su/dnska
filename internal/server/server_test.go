@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"net"
@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vadim-su/dnska/pkg/dns"
+	"github.com/vadim-su/dnska/pkg/dns/message"
+	"github.com/vadim-su/dnska/pkg/dns/types"
+	"github.com/vadim-su/dnska/pkg/dns/utils"
 )
 
 func TestNewDNSServer(t *testing.T) {
@@ -164,13 +166,13 @@ func TestCreateAnswerForQuestion(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		question    dns.DNSQuestion
-		expected    *dns.DNSAnswer
+		question    message.DNSQuestion
+		expected    *message.DNSAnswer
 		description string
 	}{
 		{
 			name: "create answer for A record",
-			question: dns.DNSQuestion{
+			question: message.DNSQuestion{
 				Name:  createTestDomainName("example.com"),
 				Type:  [2]byte{0x00, 0x01}, // TYPE_A
 				Class: [2]byte{0x00, 0x01}, // CLASS_IN
@@ -179,7 +181,7 @@ func TestCreateAnswerForQuestion(t *testing.T) {
 		},
 		{
 			name: "create answer for different domain",
-			question: dns.DNSQuestion{
+			question: message.DNSQuestion{
 				Name:  createTestDomainName("test.org"),
 				Type:  [2]byte{0x00, 0x01}, // TYPE_A
 				Class: [2]byte{0x00, 0x01}, // CLASS_IN
@@ -188,7 +190,7 @@ func TestCreateAnswerForQuestion(t *testing.T) {
 		},
 		{
 			name: "create answer for root domain",
-			question: dns.DNSQuestion{
+			question: message.DNSQuestion{
 				Name:  createTestDomainName("."),
 				Type:  [2]byte{0x00, 0x01}, // TYPE_A
 				Class: [2]byte{0x00, 0x01}, // CLASS_IN
@@ -233,7 +235,7 @@ func TestCreateAnswers(t *testing.T) {
 	tests := []struct {
 		name          string
 		server        *DNSServer
-		questions     []dns.DNSQuestion
+		questions     []message.DNSQuestion
 		expectedCount int
 		description   string
 	}{
@@ -243,7 +245,7 @@ func TestCreateAnswers(t *testing.T) {
 				address:      "127.0.0.1:8053",
 				resolverAddr: "127.0.0.1:8053", // Same as server, no forwarding
 			},
-			questions: []dns.DNSQuestion{
+			questions: []message.DNSQuestion{
 				{
 					Name:  createTestDomainName("example.com"),
 					Type:  [2]byte{0x00, 0x01}, // TYPE_A
@@ -259,7 +261,7 @@ func TestCreateAnswers(t *testing.T) {
 				address:      "127.0.0.1:8053",
 				resolverAddr: "127.0.0.1:8053", // Same as server, no forwarding
 			},
-			questions: []dns.DNSQuestion{
+			questions: []message.DNSQuestion{
 				{
 					Name:  createTestDomainName("example.com"),
 					Type:  [2]byte{0x00, 0x01}, // TYPE_A
@@ -280,7 +282,7 @@ func TestCreateAnswers(t *testing.T) {
 				address:      "127.0.0.1:8053",
 				resolverAddr: "127.0.0.1:8053",
 			},
-			questions:     []dns.DNSQuestion{},
+			questions:     []message.DNSQuestion{},
 			expectedCount: 0,
 			description:   "Should handle empty questions list",
 		},
@@ -290,7 +292,7 @@ func TestCreateAnswers(t *testing.T) {
 				address:      "127.0.0.1:8053",
 				resolverAddr: "1.2.3.4:53", // Different resolver, will try forwarding
 			},
-			questions: []dns.DNSQuestion{
+			questions: []message.DNSQuestion{
 				{
 					Name:  createTestDomainName("example.com"),
 					Type:  [2]byte{0x00, 0x01}, // TYPE_A
@@ -329,7 +331,7 @@ func TestForwardRequest(t *testing.T) {
 	tests := []struct {
 		name        string
 		server      *DNSServer
-		questions   []dns.DNSQuestion
+		questions   []message.DNSQuestion
 		expectEmpty bool
 		description string
 	}{
@@ -338,7 +340,7 @@ func TestForwardRequest(t *testing.T) {
 			server: &DNSServer{
 				resolverAddr: "192.0.2.1:53", // RFC 5737 test address, should be unreachable
 			},
-			questions: []dns.DNSQuestion{
+			questions: []message.DNSQuestion{
 				{
 					Name:  createTestDomainName("example.com"),
 					Type:  [2]byte{0x00, 0x01}, // TYPE_A
@@ -353,7 +355,7 @@ func TestForwardRequest(t *testing.T) {
 			server: &DNSServer{
 				resolverAddr: "invalid:address",
 			},
-			questions: []dns.DNSQuestion{
+			questions: []message.DNSQuestion{
 				{
 					Name:  createTestDomainName("example.com"),
 					Type:  [2]byte{0x00, 0x01}, // TYPE_A
@@ -368,7 +370,7 @@ func TestForwardRequest(t *testing.T) {
 			server: &DNSServer{
 				resolverAddr: "8.8.8.8:53",
 			},
-			questions:   []dns.DNSQuestion{},
+			questions:   []message.DNSQuestion{},
 			expectEmpty: true,
 			description: "Should handle empty questions list",
 		},
@@ -404,22 +406,22 @@ func TestHandleRequest(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		request     *dns.DNSRequest
+		request     *message.DNSRequest
 		expectError bool
 		description string
 	}{
 		{
 			name: "handle valid request",
-			request: &dns.DNSRequest{
-				Header: dns.DNSHeader{
+			request: &message.DNSRequest{
+				Header: message.DNSHeader{
 					ID:                    0x1234,
-					Flags:                 dns.FLAG_QR_QUERY | dns.FLAG_OPCODE_STANDARD,
+					Flags:                 types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD,
 					QuestionCount:         1,
 					AnswerRecordCount:     0,
 					AuthorityRecordCount:  0,
 					AdditionalRecordCount: 0,
 				},
-				Questions: []dns.DNSQuestion{
+				Questions: []message.DNSQuestion{
 					{
 						Name:  createTestDomainName("example.com"),
 						Type:  [2]byte{0x00, 0x01}, // TYPE_A
@@ -432,16 +434,16 @@ func TestHandleRequest(t *testing.T) {
 		},
 		{
 			name: "handle request with multiple questions",
-			request: &dns.DNSRequest{
-				Header: dns.DNSHeader{
+			request: &message.DNSRequest{
+				Header: message.DNSHeader{
 					ID:                    0x5678,
-					Flags:                 dns.FLAG_QR_QUERY | dns.FLAG_OPCODE_STANDARD,
+					Flags:                 types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD,
 					QuestionCount:         2,
 					AnswerRecordCount:     0,
 					AuthorityRecordCount:  0,
 					AdditionalRecordCount: 0,
 				},
-				Questions: []dns.DNSQuestion{
+				Questions: []message.DNSQuestion{
 					{
 						Name:  createTestDomainName("example.com"),
 						Type:  [2]byte{0x00, 0x01}, // TYPE_A
@@ -459,16 +461,16 @@ func TestHandleRequest(t *testing.T) {
 		},
 		{
 			name: "handle request with no questions",
-			request: &dns.DNSRequest{
-				Header: dns.DNSHeader{
+			request: &message.DNSRequest{
+				Header: message.DNSHeader{
 					ID:                    0x9999,
-					Flags:                 dns.FLAG_QR_QUERY | dns.FLAG_OPCODE_STANDARD,
+					Flags:                 types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD,
 					QuestionCount:         0,
 					AnswerRecordCount:     0,
 					AuthorityRecordCount:  0,
 					AdditionalRecordCount: 0,
 				},
-				Questions: []dns.DNSQuestion{},
+				Questions: []message.DNSQuestion{},
 			},
 			expectError: false,
 			description: "Should handle request with no questions",
@@ -553,7 +555,7 @@ func TestProcessNextRequest(t *testing.T) {
 			// Instead, we test the DNS parsing part directly.
 
 			if len(test.data) > 0 {
-				_, err := dns.NewDNSRequest(test.data)
+				_, err := message.NewDNSRequest(test.data)
 
 				if test.expectError {
 					if err == nil {
@@ -571,21 +573,16 @@ func TestProcessNextRequest(t *testing.T) {
 
 // Helper functions
 
-func createTestDomainName(domain string) dns.DomainName {
+func createTestDomainName(domain string) utils.DomainName {
 	if domain == "." {
 		// Create root domain name
-		emptyName, _, _ := dns.NewDomainName([]byte{0x00})
+		emptyName, _, _ := utils.NewDomainName([]byte{0x00})
 		return *emptyName
-	}
-
-	// Remove trailing dot if present
-	if len(domain) > 0 && domain[len(domain)-1] == '.' {
-		domain = domain[:len(domain)-1]
 	}
 
 	if domain == "" {
 		// Create empty domain name
-		emptyName, _, _ := dns.NewDomainName([]byte{0x00})
+		emptyName, _, _ := utils.NewDomainName([]byte{0x00})
 		return *emptyName
 	}
 
@@ -616,10 +613,10 @@ func createTestDomainName(domain string) dns.DomainName {
 	}
 	nameBytes = append(nameBytes, 0x00) // Root label
 
-	domainName, _, err := dns.NewDomainName(nameBytes)
+	domainName, _, err := utils.NewDomainName(nameBytes)
 	if err != nil {
 		// Fallback to empty domain name
-		emptyName, _, _ := dns.NewDomainName([]byte{0x00})
+		emptyName, _, _ := utils.NewDomainName([]byte{0x00})
 		return *emptyName
 	}
 
@@ -736,7 +733,7 @@ func TestCreateAnswersErrorCases(t *testing.T) {
 	tests := []struct {
 		name        string
 		server      *DNSServer
-		questions   []dns.DNSQuestion
+		questions   []message.DNSQuestion
 		description string
 	}{
 		{
@@ -745,9 +742,9 @@ func TestCreateAnswersErrorCases(t *testing.T) {
 				address:      "127.0.0.1:8053",
 				resolverAddr: "127.0.0.1:8053",
 			},
-			questions: []dns.DNSQuestion{
+			questions: []message.DNSQuestion{
 				{
-					Name:  dns.DomainName{}, // Empty domain name
+					Name:  utils.DomainName{}, // Empty domain name
 					Type:  [2]byte{0x00, 0x01},
 					Class: [2]byte{0x00, 0x01},
 				},
@@ -783,22 +780,22 @@ func TestHandleRequestEdgeCases(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		request     *dns.DNSRequest
+		request     *message.DNSRequest
 		clientAddr  *net.UDPAddr
 		description string
 	}{
 		{
 			name: "handle request with zero ID",
-			request: &dns.DNSRequest{
-				Header: dns.DNSHeader{
+			request: &message.DNSRequest{
+				Header: message.DNSHeader{
 					ID:                    0x0000,
-					Flags:                 dns.FLAG_QR_QUERY | dns.FLAG_OPCODE_STANDARD,
+					Flags:                 types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD,
 					QuestionCount:         1,
 					AnswerRecordCount:     0,
 					AuthorityRecordCount:  0,
 					AdditionalRecordCount: 0,
 				},
-				Questions: []dns.DNSQuestion{
+				Questions: []message.DNSQuestion{
 					{
 						Name:  createTestDomainName("test.com"),
 						Type:  [2]byte{0x00, 0x01},
@@ -814,16 +811,16 @@ func TestHandleRequestEdgeCases(t *testing.T) {
 		},
 		{
 			name: "handle request with maximum ID",
-			request: &dns.DNSRequest{
-				Header: dns.DNSHeader{
+			request: &message.DNSRequest{
+				Header: message.DNSHeader{
 					ID:                    0xFFFF,
-					Flags:                 dns.FLAG_QR_QUERY | dns.FLAG_OPCODE_STANDARD,
+					Flags:                 types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD,
 					QuestionCount:         0,
 					AnswerRecordCount:     0,
 					AuthorityRecordCount:  0,
 					AdditionalRecordCount: 0,
 				},
-				Questions: []dns.DNSQuestion{},
+				Questions: []message.DNSQuestion{},
 			},
 			clientAddr: &net.UDPAddr{
 				IP:   net.ParseIP("127.0.0.1"),
@@ -847,7 +844,7 @@ func TestForwardRequestEdgeCases(t *testing.T) {
 	tests := []struct {
 		name        string
 		server      *DNSServer
-		questions   []dns.DNSQuestion
+		questions   []message.DNSQuestion
 		description string
 	}{
 		{
@@ -855,7 +852,7 @@ func TestForwardRequestEdgeCases(t *testing.T) {
 			server: &DNSServer{
 				resolverAddr: "127.0.0.1:0",
 			},
-			questions: []dns.DNSQuestion{
+			questions: []message.DNSQuestion{
 				{
 					Name:  createTestDomainName("example.com"),
 					Type:  [2]byte{0x00, 0x01},
@@ -869,7 +866,7 @@ func TestForwardRequestEdgeCases(t *testing.T) {
 			server: &DNSServer{
 				resolverAddr: "localhost:53",
 			},
-			questions: []dns.DNSQuestion{
+			questions: []message.DNSQuestion{
 				{
 					Name:  createTestDomainName("test.local"),
 					Type:  [2]byte{0x00, 0x01},

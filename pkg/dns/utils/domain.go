@@ -1,4 +1,4 @@
-package dns
+package utils
 
 import "fmt"
 
@@ -8,23 +8,23 @@ const (
 
 // Label represents a single label in a domain name
 type Label struct {
-	length  uint8
-	content []byte
+	Length  uint8
+	Content []byte
 }
 
 // ToBytes converts the Label to its byte representation
 func (l *Label) ToBytes() []byte {
-	label := make([]byte, l.length+1)
+	label := make([]byte, l.Length+1)
 
-	label[0] = l.length
-	copy(label[1:], l.content)
+	label[0] = l.Length
+	copy(label[1:], l.Content)
 
 	return label
 }
 
 // DomainName represents a full domain name composed of multiple labels
 type DomainName struct {
-	labels []Label
+	Labels []Label
 }
 
 // NewDomainName creates a new DomainName from raw byte data
@@ -59,14 +59,14 @@ func NewDomainName(data []byte) (*DomainName, uint16, error) {
 func (d *DomainName) ToBytes() []byte {
 	totalBytes := uint(1) // Count ending byte
 
-	for _, label := range d.labels {
-		totalBytes += uint(label.length) + 1
+	for _, label := range d.Labels {
+		totalBytes += uint(label.Length) + 1
 	}
 
 	domainName := make([]byte, totalBytes)
 
 	cursor := uint(0)
-	for _, label := range d.labels {
+	for _, label := range d.Labels {
 		labelBytes := label.ToBytes()
 		copy(domainName[cursor:cursor+uint(len(labelBytes))], labelBytes)
 		cursor += uint(len(labelBytes)) // THIS LINE WAS MISSING!
@@ -87,24 +87,24 @@ func (d *DomainName) ToBytesWithCompression(
 
 	// Check if we can use a pointer for the entire domain
 	if offset, exists := compressionMap.nameToOffset[domainString]; exists {
-		return createCompressionPointer(offset)
+		return CreateCompressionPointer(offset)
 	}
 
 	result := make([]byte, 0)
 
 	// Check for suffix compression
-	for labelIndex := 0; labelIndex < len(d.labels); labelIndex++ {
+	for labelIndex := 0; labelIndex < len(d.Labels); labelIndex++ {
 		suffix := d.getSuffixFrom(labelIndex)
 		suffixString := suffix.String()
 
 		if offset, exists := compressionMap.nameToOffset[suffixString]; exists {
 			// Add the labels before the suffix
 			for idx := range labelIndex {
-				labelBytes := d.labels[idx].ToBytes()
+				labelBytes := d.Labels[idx].ToBytes()
 				result = append(result, labelBytes...)
 			}
 			// Add compression pointer
-			pointer := createCompressionPointer(offset)
+			pointer := CreateCompressionPointer(offset)
 			result = append(result, pointer...)
 			return result
 		}
@@ -117,7 +117,7 @@ func (d *DomainName) ToBytesWithCompression(
 	compressionMap.nameToOffset[domainString] = currentOffset
 
 	// Also store all suffixes for future compression
-	for labelIndex := 1; labelIndex < len(d.labels); labelIndex++ {
+	for labelIndex := 1; labelIndex < len(d.Labels); labelIndex++ {
 		suffix := d.getSuffixFrom(labelIndex)
 		suffixOffset := currentOffset + d.getBytesUpToLabel(labelIndex)
 		compressionMap.nameToOffset[suffix.String()] = suffixOffset
@@ -128,30 +128,30 @@ func (d *DomainName) ToBytesWithCompression(
 
 // String converts the DomainName to its string representation
 func (d *DomainName) String() string {
-	if len(d.labels) == 0 {
+	if len(d.Labels) == 0 {
 		return "."
 	}
 
 	result := ""
-	for _, label := range d.labels {
-		result += string(label.content) + "."
+	for _, label := range d.Labels {
+		result += string(label.Content) + "."
 	}
 	return result
 }
 
 // getSuffixFrom returns a new DomainName starting from the specified label index
 func (d *DomainName) getSuffixFrom(startIndex int) *DomainName {
-	if startIndex >= len(d.labels) {
-		return &DomainName{labels: []Label{}}
+	if startIndex >= len(d.Labels) {
+		return &DomainName{Labels: []Label{}}
 	}
-	return &DomainName{labels: d.labels[startIndex:]}
+	return &DomainName{Labels: d.Labels[startIndex:]}
 }
 
 // getBytesUpToLabel calculates the byte size of the domain name up to the specified label index
 func (d *DomainName) getBytesUpToLabel(labelIndex int) uint16 {
 	size := uint16(0)
 	for idx := range labelIndex {
-		size += uint16(d.labels[idx].length) + 1 // +1 for length byte
+		size += uint16(d.Labels[idx].Length) + 1 // +1 for length byte
 	}
 	return size
 }
@@ -172,13 +172,13 @@ func NewDomainNameWithDecompression(
 		firstByte := data[0]
 
 		// Check if this is a compression pointer
-		if isCompressionPointer(firstByte) {
+		if IsCompressionPointer(firstByte) {
 			if len(data) < 2 {
 				return nil, 0, fmt.Errorf("invalid compression pointer")
 			}
 
 			// Extract offset from pointer
-			offset := extractCompressionOffset(data)
+			offset := ExtractCompressionOffset(data)
 			size += 2 // Compression pointer is 2 bytes
 
 			// Follow the pointer to get remaining labels
@@ -195,8 +195,8 @@ func NewDomainNameWithDecompression(
 			}
 
 			// Combine current labels with pointed domain
-			labels = append(labels, remainingDomain.labels...)
-			return &DomainName{labels}, size, nil
+			labels = append(labels, remainingDomain.Labels...)
+			return &DomainName{Labels: labels}, size, nil
 		}
 
 		// Regular label processing
@@ -204,14 +204,14 @@ func NewDomainNameWithDecompression(
 		size += 1
 
 		if length == NULL_BYTE {
-			return &DomainName{labels}, size, nil
+			return &DomainName{Labels: labels}, size, nil
 		}
 
 		if len(data[1:]) < int(length) {
 			return nil, 0, fmt.Errorf("not enough bytes in name's label")
 		}
 
-		labels = append(labels, Label{length, data[1 : length+1]})
+		labels = append(labels, Label{Length: length, Content: data[1 : length+1]})
 		size += uint16(length)
 		data = data[length+1:]
 	}

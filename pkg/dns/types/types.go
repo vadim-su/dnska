@@ -1,4 +1,4 @@
-package dns
+package types
 
 // DNSType represents a DNS record type
 type DNSType uint16
@@ -22,17 +22,6 @@ const (
 	TYPE_MX    DNSType = 15 // mail exchange
 	TYPE_TXT   DNSType = 16 // text strings
 	TYPE_AAAA  DNSType = 28 // IPv6 host address
-)
-
-// DNSClass represents a DNS class
-type DNSClass uint16
-
-// DNS Class constants
-const (
-	CLASS_IN DNSClass = 1 // Internet
-	CLASS_CS DNSClass = 2 // the CSNET class (Obsolete - used only for examples in some obsolete RFCs)
-	CLASS_CH DNSClass = 3 // the CHAOS class
-	CLASS_HS DNSClass = 4 // Hesiod [Dyer 87]
 )
 
 // DNS Header flag constants
@@ -75,7 +64,49 @@ const (
 	FLAG_RCODE_REFUSED         = DNSFlag(5) // Refused
 )
 
+// String returns the string representation of a DNS type
+func (t DNSType) String() string {
+	switch t {
+	case TYPE_A:
+		return "A"
+	case TYPE_NS:
+		return "NS"
+	case TYPE_MD:
+		return "MD"
+	case TYPE_MF:
+		return "MF"
+	case TYPE_CNAME:
+		return "CNAME"
+	case TYPE_SOA:
+		return "SOA"
+	case TYPE_MB:
+		return "MB"
+	case TYPE_MG:
+		return "MG"
+	case TYPE_MR:
+		return "MR"
+	case TYPE_NULL:
+		return "NULL"
+	case TYPE_WKS:
+		return "WKS"
+	case TYPE_PTR:
+		return "PTR"
+	case TYPE_HINFO:
+		return "HINFO"
+	case TYPE_MINFO:
+		return "MINFO"
+	case TYPE_MX:
+		return "MX"
+	case TYPE_TXT:
+		return "TXT"
+	case TYPE_AAAA:
+		return "AAAA"
+	default:
+		return "UNKNOWN"
+	}
+}
+
 // Helper function to convert uint16-based types to [2]byte
-func dnsTypeClassToBytes[T ~uint16](value T) [2]byte {
+func DnsTypeClassToBytes[T ~uint16](value T) [2]byte {
 	return [2]byte{byte(value >> 8), byte(value & 0xFF)}
 }

@@ -1,0 +1,75 @@
+# Production DNS Server Configuration
+# Optimized for high-performance production deployments
+
+# Server configuration
+server:
+  address: "0.0.0.0:53"
+  read_timeout: 30s
+  write_timeout: 30s
+  max_connections: 50000
+  enable_tcp: true
+  enable_udp: true
+  enable_metrics: true
+  enable_health: true
+
+# Resolver configuration
+resolver:
+  type: "cache"
+  timeout: 15s
+  max_retries: 3
+  forward_servers:
+    - "8.8.8.8:53"
+    - "8.8.4.4:53"
+    - "1.1.1.1:53"
+    - "9.9.9.9:53"
+  root_servers:
+    - "a.root-servers.net:53"
+    - "b.root-servers.net:53"
+    - "c.root-servers.net:53"
+    - "d.root-servers.net:53"
+    - "e.root-servers.net:53"
+    - "f.root-servers.net:53"
+    - "g.root-servers.net:53"
+    - "h.root-servers.net:53"
+    - "i.root-servers.net:53"
+    - "j.root-servers.net:53"
+    - "k.root-servers.net:53"
+    - "l.root-servers.net:53"
+    - "m.root-servers.net:53"
+  recursion_depth: 15
+
+# Storage configuration
+storage:
+  type: "postgres"
+  dsn: "postgres://dnska:password@localhost:5432/dnska?sslmode=disable"
+  max_conns: 100
+
+# API configuration
+api:
+  enabled: true
+  address: "127.0.0.1:8080"
+  enable_rest: true
+  enable_grpc: true
+  auth_enabled: true
+
+# Logging configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "/var/log/dnska/dnska.log"
+
+# Cache configuration
+cache:
+  enabled: true
+  size: 50000
+  ttl: 1800s  # 30 minutes
+  type: "lru"
+
+# Production zones (minimal - zones would typically be loaded from database)
+zones:
+  - name: "localhost"
+    records:
+      - name: "@"
+        type: "A"
+        value: "127.0.0.1"
+        ttl: 300

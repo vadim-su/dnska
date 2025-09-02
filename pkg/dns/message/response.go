@@ -1,6 +1,11 @@
-package dns
+package message
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/vadim-su/dnska/pkg/dns/types"
+	"github.com/vadim-su/dnska/pkg/dns/utils"
+)
 
 // DNSResponse represents a full DNS response message.
 type DNSResponse struct {
@@ -27,7 +32,7 @@ func NewDNSResponse(data []byte) (*DNSResponse, error) {
 
 	header := NewDNSHeader(
 		uint16(data[0])<<8|uint16(data[1]),
-		DNSFlag(uint16(data[2])<<8|uint16(data[3])),
+		types.DNSFlag(uint16(data[2])<<8|uint16(data[3])),
 		uint16(data[4])<<8|uint16(data[5]),
 		uint16(data[6])<<8|uint16(data[7]),
 		uint16(data[8])<<8|uint16(data[9]),
@@ -56,7 +61,7 @@ func NewDNSResponse(data []byte) (*DNSResponse, error) {
 }
 
 // Generate a DNS response based on the request flags and provided questions and answers
-func GenerateDNSResponse(id uint16, reqFlags DNSFlag, questions []DNSQuestion, answers []DNSAnswer) *DNSResponse {
+func GenerateDNSResponse(id uint16, reqFlags types.DNSFlag, questions []DNSQuestion, answers []DNSAnswer) *DNSResponse {
 	flags := PrepareResponseFlags(reqFlags)
 	return &DNSResponse{
 		DNSHeader{
@@ -75,7 +80,7 @@ func GenerateDNSResponse(id uint16, reqFlags DNSFlag, questions []DNSQuestion, a
 // Generate a DNS query with the given ID and questions
 func GenerateDNSQuery(id uint16, questions []DNSQuestion) *DNSResponse {
 	// Create proper query flags: standard query with recursion desired
-	flags := FLAG_QR_QUERY | FLAG_OPCODE_STANDARD | FLAG_RD_RECURSION_DESIRED
+	flags := types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD | types.FLAG_RD_RECURSION_DESIRED
 	return &DNSResponse{
 		DNSHeader{
 			id,
@@ -91,13 +96,13 @@ func GenerateDNSQuery(id uint16, questions []DNSQuestion) *DNSResponse {
 }
 
 // PrepareResponseFlags prepares the response flags based on the request flags
-func PrepareResponseFlags(reqFlags DNSFlag) DNSFlag {
-	respFlags := reqFlags | FLAG_QR_RESPONSE
+func PrepareResponseFlags(reqFlags types.DNSFlag) types.DNSFlag {
+	respFlags := reqFlags | types.FLAG_QR_RESPONSE
 
-	if ((reqFlags >> BIT_OPCODE_START) & 0xF) == 0 {
-		respFlags = respFlags | FLAG_RCODE_NO_ERROR
+	if ((reqFlags >> types.BIT_OPCODE_START) & 0xF) == 0 {
+		respFlags = respFlags | types.FLAG_RCODE_NO_ERROR
 	} else {
-		respFlags = respFlags | FLAG_RCODE_NOT_IMPLEMENTED
+		respFlags = respFlags | types.FLAG_RCODE_NOT_IMPLEMENTED
 	}
 
 	return respFlags
@@ -120,7 +125,7 @@ func (d *DNSResponse) ToBytes() []byte {
 
 // Convert DNSResponse to byte array with name compression
 func (d *DNSResponse) ToBytesWithCompression() []byte {
-	compressionMap := NewCompressionMap()
+	compressionMap := utils.NewCompressionMap()
 	result := make([]byte, 0, 512)
 
 	headerBytes := d.Header.ToBytes()

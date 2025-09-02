@@ -1,10 +1,14 @@
-package dns
+package message
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/vadim-su/dnska/pkg/dns/utils"
+)
 
 // DNSQuestion represents a DNS question record.
 type DNSQuestion struct {
-	Name  DomainName
+	Name  utils.DomainName
 	Class [2]byte
 	Type  [2]byte
 }
@@ -15,7 +19,7 @@ func NewDNSQuestions(data []byte, count uint16, originalMessage []byte) ([]DNSQu
 	questionsDataSize := uint16(0)
 
 	for range count {
-		dnsName, domainDataSize, err := NewDomainNameWithDecompression(data, originalMessage)
+		dnsName, domainDataSize, err := utils.NewDomainNameWithDecompression(data, originalMessage)
 		if err != nil {
 			return nil, 0, fmt.Errorf("can't create DNS question: %s", err)
 		}
@@ -55,7 +59,7 @@ func (d *DNSQuestion) ToBytes() []byte {
 
 // Convert the DNS question to its byte representation with compression
 func (d *DNSQuestion) ToBytesWithCompression(
-	compressionMap *CompressionMap,
+	compressionMap *utils.CompressionMap,
 	currentOffset uint16,
 ) []byte {
 	nameBytes := d.Name.ToBytesWithCompression(compressionMap, currentOffset)

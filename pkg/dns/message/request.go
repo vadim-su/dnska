@@ -1,6 +1,11 @@
-package dns
+package message
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/vadim-su/dnska/pkg/dns/types"
+	"github.com/vadim-su/dnska/pkg/dns/utils"
+)
 
 // DNSRequest represents a full DNS request message.
 type DNSRequest struct {
@@ -127,7 +132,7 @@ func parseHeaderFromBytes(headerData []byte) (DNSHeader, error) {
 
 	header := DNSHeader{
 		ID:                    uint16(headerData[0])<<8 | uint16(headerData[1]),
-		Flags:                 DNSFlag(uint16(headerData[2])<<8 | uint16(headerData[3])),
+		Flags:                 types.DNSFlag(uint16(headerData[2])<<8 | uint16(headerData[3])),
 		QuestionCount:         uint16(headerData[4])<<8 | uint16(headerData[5]),
 		AnswerRecordCount:     uint16(headerData[6])<<8 | uint16(headerData[7]),
 		AuthorityRecordCount:  uint16(headerData[8])<<8 | uint16(headerData[9]),
@@ -255,7 +260,7 @@ func (request *DNSRequest) ToBytes() []byte {
 
 // ToBytesWithCompression converts the DNSRequest to bytes using DNS name compression.
 func (request *DNSRequest) ToBytesWithCompression() []byte {
-	compressionMap := NewCompressionMap()
+	compressionMap := utils.NewCompressionMap()
 	result := request.Header.ToBytes()
 	currentOffset := uint16(12) // Header is always 12 bytes
 

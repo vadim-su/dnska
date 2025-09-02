@@ -1,0 +1,110 @@
+# DNS Server Configuration
+# This is the main configuration file for the DNS server
+
+# Server configuration
+server:
+  address: "127.0.0.1:53"
+  read_timeout: 5s
+  write_timeout: 5s
+  max_connections: 1000
+  enable_tcp: true
+  enable_udp: true
+  enable_metrics: true
+  enable_health: true
+
+# Resolver configuration
+resolver:
+  type: "forward"  # Options: recursive, forward, cache
+  timeout: 5s
+  max_retries: 3
+  forward_servers:
+    - "8.8.8.8:53"      # Google DNS
+    - "8.8.4.4:53"      # Google DNS
+    - "1.1.1.1:53"      # Cloudflare DNS
+    - "9.9.9.9:53"      # Quad9 DNS
+  root_servers:
+    - "a.root-servers.net:53"
+    - "b.root-servers.net:53"
+    - "c.root-servers.net:53"
+  recursion_depth: 10
+
+# Storage configuration
+storage:
+  type: "memory"  # Options: memory, sqlite, postgres, redis
+  dsn: ""         # Not needed for memory storage
+  max_conns: 10
+
+# API configuration
+api:
+  enabled: false
+  address: "127.0.0.1:8080"
+  enable_rest: true
+  enable_grpc: false
+  auth_enabled: false
+
+# Logging configuration
+logging:
+  level: "info"   # Options: debug, info, warn, error
+  format: "text"  # Options: text, json
+  output: "stdout" # Options: stdout, stderr, or file path
+
+# Cache configuration
+cache:
+  enabled: true
+  size: 1000
+  ttl: 300s  # 5 minutes
+  type: "lru" # Options: lru, lfu, ttl
+
+# Zone configurations
+zones:
+  # Local zone for testing
+  - name: "localhost"
+    records:
+      - name: "@"
+        type: "A"
+        value: "127.0.0.1"
+        ttl: 300
+      - name: "www"
+        type: "CNAME"
+        value: "@"
+        ttl: 300
+
+  # Example zone
+  - name: "example.com"
+    records:
+      - name: "@"
+        type: "A"
+        value: "192.168.1.100"
+        ttl: 300
+      - name: "www"
+        type: "CNAME"
+        value: "@"
+        ttl: 300
+      - name: "mail"
+        type: "MX"
+        value: "10 mail.example.com"
+        ttl: 300
+      - name: "mail"
+        type: "A"
+        value: "192.168.1.101"
+        ttl: 300
+      - name: "@"
+        type: "TXT"
+        value: "v=spf1 -all"
+        ttl: 300
+      - name: "_dmarc"
+        type: "TXT"
+        value: "v=DMARC1; p=none"
+        ttl: 300
+
+  # IPv6 example zone
+  - name: "ipv6.example.com"
+    records:
+      - name: "@"
+        type: "AAAA"
+        value: "2001:db8::1"
+        ttl: 300
+      - name: "www"
+        type: "AAAA"
+        value: "2001:db8::2"
+        ttl: 300

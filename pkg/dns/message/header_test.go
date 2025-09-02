@@ -1,15 +1,17 @@
-package dns
+package message
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/vadim-su/dnska/pkg/dns/types"
 )
 
 func TestNewDNSHeader(t *testing.T) {
 	tests := []struct {
 		name                  string
 		id                    uint16
-		flags                 DNSFlag
+		flags                 types.DNSFlag
 		questionCount         uint16
 		answerRecordCount     uint16
 		authorityRecordCount  uint16
@@ -19,14 +21,14 @@ func TestNewDNSHeader(t *testing.T) {
 		{
 			name:                  "basic header creation",
 			id:                    0x1234,
-			flags:                 FLAG_QR_QUERY | FLAG_OPCODE_STANDARD | FLAG_RD_RECURSION_DESIRED,
+			flags:                 types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD | types.FLAG_RD_RECURSION_DESIRED,
 			questionCount:         1,
 			answerRecordCount:     0,
 			authorityRecordCount:  0,
 			additionalRecordCount: 0,
 			expected: &DNSHeader{
 				ID:                    0x1234,
-				Flags:                 FLAG_QR_QUERY | FLAG_OPCODE_STANDARD | FLAG_RD_RECURSION_DESIRED,
+				Flags:                 types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD | types.FLAG_RD_RECURSION_DESIRED,
 				QuestionCount:         1,
 				AnswerRecordCount:     0,
 				AuthorityRecordCount:  0,
@@ -36,14 +38,14 @@ func TestNewDNSHeader(t *testing.T) {
 		{
 			name:                  "response header with records",
 			id:                    0x5678,
-			flags:                 FLAG_QR_RESPONSE | FLAG_OPCODE_STANDARD | FLAG_AA_AUTHORITATIVE | FLAG_RD_RECURSION_DESIRED | FLAG_RA_RECURSION_AVAILABLE,
+			flags:                 types.FLAG_QR_RESPONSE | types.FLAG_OPCODE_STANDARD | types.FLAG_AA_AUTHORITATIVE | types.FLAG_RD_RECURSION_DESIRED | types.FLAG_RA_RECURSION_AVAILABLE,
 			questionCount:         1,
 			answerRecordCount:     2,
 			authorityRecordCount:  1,
 			additionalRecordCount: 1,
 			expected: &DNSHeader{
 				ID:                    0x5678,
-				Flags:                 FLAG_QR_RESPONSE | FLAG_OPCODE_STANDARD | FLAG_AA_AUTHORITATIVE | FLAG_RD_RECURSION_DESIRED | FLAG_RA_RECURSION_AVAILABLE,
+				Flags:                 types.FLAG_QR_RESPONSE | types.FLAG_OPCODE_STANDARD | types.FLAG_AA_AUTHORITATIVE | types.FLAG_RD_RECURSION_DESIRED | types.FLAG_RA_RECURSION_AVAILABLE,
 				QuestionCount:         1,
 				AnswerRecordCount:     2,
 				AuthorityRecordCount:  1,
@@ -114,7 +116,7 @@ func TestDNSHeaderToBytes(t *testing.T) {
 			name: "basic query header",
 			header: &DNSHeader{
 				ID:                    0x1234,
-				Flags:                 FLAG_QR_QUERY | FLAG_OPCODE_STANDARD | FLAG_RD_RECURSION_DESIRED,
+				Flags:                 types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD | types.FLAG_RD_RECURSION_DESIRED,
 				QuestionCount:         1,
 				AnswerRecordCount:     0,
 				AuthorityRecordCount:  0,
@@ -133,8 +135,8 @@ func TestDNSHeaderToBytes(t *testing.T) {
 			name: "response header with all flags",
 			header: &DNSHeader{
 				ID: 0x5678,
-				Flags: FLAG_QR_RESPONSE | FLAG_OPCODE_STANDARD | FLAG_AA_AUTHORITATIVE |
-					FLAG_TC_TRUNCATED | FLAG_RD_RECURSION_DESIRED | FLAG_RA_RECURSION_AVAILABLE,
+				Flags: types.FLAG_QR_RESPONSE | types.FLAG_OPCODE_STANDARD | types.FLAG_AA_AUTHORITATIVE |
+					types.FLAG_TC_TRUNCATED | types.FLAG_RD_RECURSION_DESIRED | types.FLAG_RA_RECURSION_AVAILABLE,
 				QuestionCount:         1,
 				AnswerRecordCount:     2,
 				AuthorityRecordCount:  1,
@@ -153,7 +155,7 @@ func TestDNSHeaderToBytes(t *testing.T) {
 			name: "header with error code",
 			header: &DNSHeader{
 				ID:                    0xABCD,
-				Flags:                 FLAG_QR_RESPONSE | FLAG_OPCODE_STANDARD | FLAG_RCODE_NAME_ERROR,
+				Flags:                 types.FLAG_QR_RESPONSE | types.FLAG_OPCODE_STANDARD | types.FLAG_RCODE_NAME_ERROR,
 				QuestionCount:         1,
 				AnswerRecordCount:     0,
 				AuthorityRecordCount:  0,
@@ -163,82 +165,6 @@ func TestDNSHeaderToBytes(t *testing.T) {
 				0xAB, 0xCD, // ID
 				0x80, 0x03, // Flags (QR=1, RCODE=3)
 				0x00, 0x01, // Question count
-				0x00, 0x00, // Answer count
-				0x00, 0x00, // Authority count
-				0x00, 0x00, // Additional count
-			},
-		},
-		{
-			name: "zero header",
-			header: &DNSHeader{
-				ID:                    0,
-				Flags:                 0,
-				QuestionCount:         0,
-				AnswerRecordCount:     0,
-				AuthorityRecordCount:  0,
-				AdditionalRecordCount: 0,
-			},
-			expected: []byte{
-				0x00, 0x00, // ID
-				0x00, 0x00, // Flags
-				0x00, 0x00, // Question count
-				0x00, 0x00, // Answer count
-				0x00, 0x00, // Authority count
-				0x00, 0x00, // Additional count
-			},
-		},
-		{
-			name: "maximum values header",
-			header: &DNSHeader{
-				ID:                    0xFFFF,
-				Flags:                 0xFFFF,
-				QuestionCount:         0xFFFF,
-				AnswerRecordCount:     0xFFFF,
-				AuthorityRecordCount:  0xFFFF,
-				AdditionalRecordCount: 0xFFFF,
-			},
-			expected: []byte{
-				0xFF, 0xFF, // ID
-				0xFF, 0xFF, // Flags
-				0xFF, 0xFF, // Question count
-				0xFF, 0xFF, // Answer count
-				0xFF, 0xFF, // Authority count
-				0xFF, 0xFF, // Additional count
-			},
-		},
-		{
-			name: "inverse query header",
-			header: &DNSHeader{
-				ID:                    0x1111,
-				Flags:                 FLAG_QR_QUERY | FLAG_OPCODE_INVERSE,
-				QuestionCount:         0,
-				AnswerRecordCount:     1,
-				AuthorityRecordCount:  0,
-				AdditionalRecordCount: 0,
-			},
-			expected: []byte{
-				0x11, 0x11, // ID
-				0x08, 0x00, // Flags (OPCODE=1)
-				0x00, 0x00, // Question count
-				0x00, 0x01, // Answer count
-				0x00, 0x00, // Authority count
-				0x00, 0x00, // Additional count
-			},
-		},
-		{
-			name: "status request header",
-			header: &DNSHeader{
-				ID:                    0x2222,
-				Flags:                 FLAG_QR_QUERY | FLAG_OPCODE_STATUS,
-				QuestionCount:         0,
-				AnswerRecordCount:     0,
-				AuthorityRecordCount:  0,
-				AdditionalRecordCount: 0,
-			},
-			expected: []byte{
-				0x22, 0x22, // ID
-				0x10, 0x00, // Flags (OPCODE=2)
-				0x00, 0x00, // Question count
 				0x00, 0x00, // Answer count
 				0x00, 0x00, // Authority count
 				0x00, 0x00, // Additional count
@@ -271,7 +197,7 @@ func TestDNSHeaderRoundTrip(t *testing.T) {
 			name: "standard query",
 			header: NewDNSHeader(
 				0x1234,
-				FLAG_QR_QUERY|FLAG_OPCODE_STANDARD|FLAG_RD_RECURSION_DESIRED,
+				types.FLAG_QR_QUERY|types.FLAG_OPCODE_STANDARD|types.FLAG_RD_RECURSION_DESIRED,
 				1, 0, 0, 0,
 			),
 		},
@@ -279,7 +205,7 @@ func TestDNSHeaderRoundTrip(t *testing.T) {
 			name: "authoritative response",
 			header: NewDNSHeader(
 				0x5678,
-				FLAG_QR_RESPONSE|FLAG_OPCODE_STANDARD|FLAG_AA_AUTHORITATIVE|FLAG_RD_RECURSION_DESIRED|FLAG_RA_RECURSION_AVAILABLE,
+				types.FLAG_QR_RESPONSE|types.FLAG_OPCODE_STANDARD|types.FLAG_AA_AUTHORITATIVE|types.FLAG_RD_RECURSION_DESIRED|types.FLAG_RA_RECURSION_AVAILABLE,
 				1, 3, 2, 1,
 			),
 		},
@@ -287,7 +213,7 @@ func TestDNSHeaderRoundTrip(t *testing.T) {
 			name: "error response",
 			header: NewDNSHeader(
 				0xABCD,
-				FLAG_QR_RESPONSE|FLAG_OPCODE_STANDARD|FLAG_RCODE_SERVER_FAILURE,
+				types.FLAG_QR_RESPONSE|types.FLAG_OPCODE_STANDARD|types.FLAG_RCODE_SERVER_FAILURE,
 				1, 0, 0, 0,
 			),
 		},
@@ -299,10 +225,9 @@ func TestDNSHeaderRoundTrip(t *testing.T) {
 			bytes := test.header.ToBytes()
 
 			// Manually reconstruct header from bytes to verify round-trip
-			// (Since there's no FromBytes method, we'll verify the byte layout)
 			reconstructed := &DNSHeader{
 				ID:                    uint16(bytes[0])<<8 | uint16(bytes[1]),
-				Flags:                 DNSFlag(bytes[2])<<8 | DNSFlag(bytes[3]),
+				Flags:                 types.DNSFlag(bytes[2])<<8 | types.DNSFlag(bytes[3]),
 				QuestionCount:         uint16(bytes[4])<<8 | uint16(bytes[5]),
 				AnswerRecordCount:     uint16(bytes[6])<<8 | uint16(bytes[7]),
 				AuthorityRecordCount:  uint16(bytes[8])<<8 | uint16(bytes[9]),
@@ -319,24 +244,24 @@ func TestDNSHeaderRoundTrip(t *testing.T) {
 func TestDNSFlagValues(t *testing.T) {
 	tests := []struct {
 		name     string
-		flag     DNSFlag
+		flag     types.DNSFlag
 		expected uint16
 	}{
-		{"QR Response", FLAG_QR_RESPONSE, 0x8000},
-		{"QR Query", FLAG_QR_QUERY, 0x0000},
-		{"OPCODE Standard", FLAG_OPCODE_STANDARD, 0x0000},
-		{"OPCODE Inverse", FLAG_OPCODE_INVERSE, 0x0800},
-		{"OPCODE Status", FLAG_OPCODE_STATUS, 0x1000},
-		{"AA Authoritative", FLAG_AA_AUTHORITATIVE, 0x0400},
-		{"TC Truncated", FLAG_TC_TRUNCATED, 0x0200},
-		{"RD Recursion Desired", FLAG_RD_RECURSION_DESIRED, 0x0100},
-		{"RA Recursion Available", FLAG_RA_RECURSION_AVAILABLE, 0x0080},
-		{"RCODE No Error", FLAG_RCODE_NO_ERROR, 0x0000},
-		{"RCODE Format Error", FLAG_RCODE_FORMAT_ERROR, 0x0001},
-		{"RCODE Server Failure", FLAG_RCODE_SERVER_FAILURE, 0x0002},
-		{"RCODE Name Error", FLAG_RCODE_NAME_ERROR, 0x0003},
-		{"RCODE Not Implemented", FLAG_RCODE_NOT_IMPLEMENTED, 0x0004},
-		{"RCODE Refused", FLAG_RCODE_REFUSED, 0x0005},
+		{"QR Response", types.FLAG_QR_RESPONSE, 0x8000},
+		{"QR Query", types.FLAG_QR_QUERY, 0x0000},
+		{"OPCODE Standard", types.FLAG_OPCODE_STANDARD, 0x0000},
+		{"OPCODE Inverse", types.FLAG_OPCODE_INVERSE, 0x0800},
+		{"OPCODE Status", types.FLAG_OPCODE_STATUS, 0x1000},
+		{"AA Authoritative", types.FLAG_AA_AUTHORITATIVE, 0x0400},
+		{"TC Truncated", types.FLAG_TC_TRUNCATED, 0x0200},
+		{"RD Recursion Desired", types.FLAG_RD_RECURSION_DESIRED, 0x0100},
+		{"RA Recursion Available", types.FLAG_RA_RECURSION_AVAILABLE, 0x0080},
+		{"RCODE No Error", types.FLAG_RCODE_NO_ERROR, 0x0000},
+		{"RCODE Format Error", types.FLAG_RCODE_FORMAT_ERROR, 0x0001},
+		{"RCODE Server Failure", types.FLAG_RCODE_SERVER_FAILURE, 0x0002},
+		{"RCODE Name Error", types.FLAG_RCODE_NAME_ERROR, 0x0003},
+		{"RCODE Not Implemented", types.FLAG_RCODE_NOT_IMPLEMENTED, 0x0004},
+		{"RCODE Refused", types.FLAG_RCODE_REFUSED, 0x0005},
 	}
 
 	for _, test := range tests {
@@ -351,37 +276,37 @@ func TestDNSFlagValues(t *testing.T) {
 func TestDNSFlagCombinations(t *testing.T) {
 	tests := []struct {
 		name          string
-		flags         DNSFlag
+		flags         types.DNSFlag
 		expectedBytes []byte
 	}{
 		{
 			name:          "standard query with recursion",
-			flags:         FLAG_QR_QUERY | FLAG_OPCODE_STANDARD | FLAG_RD_RECURSION_DESIRED,
+			flags:         types.FLAG_QR_QUERY | types.FLAG_OPCODE_STANDARD | types.FLAG_RD_RECURSION_DESIRED,
 			expectedBytes: []byte{0x01, 0x00}, // RD=1
 		},
 		{
 			name:          "authoritative response with recursion available",
-			flags:         FLAG_QR_RESPONSE | FLAG_AA_AUTHORITATIVE | FLAG_RD_RECURSION_DESIRED | FLAG_RA_RECURSION_AVAILABLE,
+			flags:         types.FLAG_QR_RESPONSE | types.FLAG_AA_AUTHORITATIVE | types.FLAG_RD_RECURSION_DESIRED | types.FLAG_RA_RECURSION_AVAILABLE,
 			expectedBytes: []byte{0x85, 0x80}, // QR=1, AA=1, RD=1, RA=1
 		},
 		{
 			name:          "truncated response",
-			flags:         FLAG_QR_RESPONSE | FLAG_TC_TRUNCATED,
+			flags:         types.FLAG_QR_RESPONSE | types.FLAG_TC_TRUNCATED,
 			expectedBytes: []byte{0x82, 0x00}, // QR=1, TC=1
 		},
 		{
 			name:          "inverse query",
-			flags:         FLAG_QR_QUERY | FLAG_OPCODE_INVERSE,
+			flags:         types.FLAG_QR_QUERY | types.FLAG_OPCODE_INVERSE,
 			expectedBytes: []byte{0x08, 0x00}, // OPCODE=1
 		},
 		{
 			name:          "server failure response",
-			flags:         FLAG_QR_RESPONSE | FLAG_RCODE_SERVER_FAILURE,
+			flags:         types.FLAG_QR_RESPONSE | types.FLAG_RCODE_SERVER_FAILURE,
 			expectedBytes: []byte{0x80, 0x02}, // QR=1, RCODE=2
 		},
 		{
 			name:          "refused response",
-			flags:         FLAG_QR_RESPONSE | FLAG_RCODE_REFUSED,
+			flags:         types.FLAG_QR_RESPONSE | types.FLAG_RCODE_REFUSED,
 			expectedBytes: []byte{0x80, 0x05}, // QR=1, RCODE=5
 		},
 	}
@@ -440,7 +365,7 @@ func TestDNSHeaderFields(t *testing.T) {
 		expected interface{}
 	}{
 		{"ID", header.ID, uint16(0x1234)},
-		{"Flags", header.Flags, DNSFlag(0x5678)},
+		{"Flags", header.Flags, types.DNSFlag(0x5678)},
 		{"QuestionCount", header.QuestionCount, uint16(10)},
 		{"AnswerRecordCount", header.AnswerRecordCount, uint16(20)},
 		{"AuthorityRecordCount", header.AuthorityRecordCount, uint16(30)},

@@ -1,4 +1,4 @@
-package dns
+package utils
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func TestNewDomainName(t *testing.T) {
 			name:  "root domain",
 			input: []byte{0x00},
 			expected: &DomainName{
-				labels: nil,
+				Labels: nil,
 			},
 			expectedErr: false,
 		},
@@ -25,10 +25,10 @@ func TestNewDomainName(t *testing.T) {
 			name:  "simple top level domain",
 			input: []byte{0x04, 't', 'e', 's', 't', 0x00},
 			expected: &DomainName{
-				labels: []Label{
+				Labels: []Label{
 					{
-						length:  4,
-						content: []byte("test"),
+						Length:  4,
+						Content: []byte("test"),
 					},
 				},
 			},
@@ -38,14 +38,14 @@ func TestNewDomainName(t *testing.T) {
 			name:  "two level domain",
 			input: []byte{0x04, 't', 'e', 's', 't', 0x03, 'c', 'o', 'm', 0x00},
 			expected: &DomainName{
-				labels: []Label{
+				Labels: []Label{
 					{
-						length:  4,
-						content: []byte("test"),
+						Length:  4,
+						Content: []byte("test"),
 					},
 					{
-						length:  3,
-						content: []byte("com"),
+						Length:  3,
+						Content: []byte("com"),
 					},
 				},
 			},
@@ -55,18 +55,18 @@ func TestNewDomainName(t *testing.T) {
 			name:  "three level domain",
 			input: []byte{0x03, 'd', 'e', 'v', 0x04, 't', 'e', 's', 't', 0x03, 'c', 'o', 'm', 0x00},
 			expected: &DomainName{
-				labels: []Label{
+				Labels: []Label{
 					{
-						length:  3,
-						content: []byte("dev"),
+						Length:  3,
+						Content: []byte("dev"),
 					},
 					{
-						length:  4,
-						content: []byte("test"),
+						Length:  4,
+						Content: []byte("test"),
 					},
 					{
-						length:  3,
-						content: []byte("com"),
+						Length:  3,
+						Content: []byte("com"),
 					},
 				},
 			},
@@ -129,17 +129,17 @@ func TestDomainNameToBytes(t *testing.T) {
 		{
 			name: "root domain",
 			domain: &DomainName{
-				labels: nil,
+				Labels: nil,
 			},
 			expected: []byte{0x00},
 		},
 		{
 			name: "simple domain",
 			domain: &DomainName{
-				labels: []Label{
+				Labels: []Label{
 					{
-						length:  4,
-						content: []byte("test"),
+						Length:  4,
+						Content: []byte("test"),
 					},
 				},
 			},
@@ -148,14 +148,14 @@ func TestDomainNameToBytes(t *testing.T) {
 		{
 			name: "two level domain",
 			domain: &DomainName{
-				labels: []Label{
+				Labels: []Label{
 					{
-						length:  4,
-						content: []byte("test"),
+						Length:  4,
+						Content: []byte("test"),
 					},
 					{
-						length:  3,
-						content: []byte("com"),
+						Length:  3,
+						Content: []byte("com"),
 					},
 				},
 			},
@@ -182,17 +182,17 @@ func TestDomainNameString(t *testing.T) {
 		{
 			name: "root domain",
 			domain: &DomainName{
-				labels: nil,
+				Labels: nil,
 			},
 			expected: ".",
 		},
 		{
 			name: "simple domain",
 			domain: &DomainName{
-				labels: []Label{
+				Labels: []Label{
 					{
-						length:  4,
-						content: []byte("test"),
+						Length:  4,
+						Content: []byte("test"),
 					},
 				},
 			},
@@ -201,14 +201,14 @@ func TestDomainNameString(t *testing.T) {
 		{
 			name: "two level domain",
 			domain: &DomainName{
-				labels: []Label{
+				Labels: []Label{
 					{
-						length:  4,
-						content: []byte("test"),
+						Length:  4,
+						Content: []byte("test"),
 					},
 					{
-						length:  3,
-						content: []byte("com"),
+						Length:  3,
+						Content: []byte("com"),
 					},
 				},
 			},
@@ -217,18 +217,18 @@ func TestDomainNameString(t *testing.T) {
 		{
 			name: "three level domain",
 			domain: &DomainName{
-				labels: []Label{
+				Labels: []Label{
 					{
-						length:  3,
-						content: []byte("www"),
+						Length:  3,
+						Content: []byte("www"),
 					},
 					{
-						length:  7,
-						content: []byte("example"),
+						Length:  7,
+						Content: []byte("example"),
 					},
 					{
-						length:  3,
-						content: []byte("org"),
+						Length:  3,
+						Content: []byte("org"),
 					},
 				},
 			},
@@ -255,24 +255,24 @@ func TestLabelToBytes(t *testing.T) {
 		{
 			name: "simple label",
 			label: Label{
-				length:  4,
-				content: []byte("test"),
+				Length:  4,
+				Content: []byte("test"),
 			},
 			expected: []byte{0x04, 't', 'e', 's', 't'},
 		},
 		{
 			name: "single character label",
 			label: Label{
-				length:  1,
-				content: []byte("a"),
+				Length:  1,
+				Content: []byte("a"),
 			},
 			expected: []byte{0x01, 'a'},
 		},
 		{
 			name: "empty content",
 			label: Label{
-				length:  0,
-				content: []byte{},
+				Length:  0,
+				Content: []byte{},
 			},
 			expected: []byte{0x00},
 		},
@@ -290,10 +290,10 @@ func TestLabelToBytes(t *testing.T) {
 
 func TestDomainNameGetSuffixFrom(t *testing.T) {
 	domain := &DomainName{
-		labels: []Label{
-			{length: 3, content: []byte("www")},
-			{length: 7, content: []byte("example")},
-			{length: 3, content: []byte("com")},
+		Labels: []Label{
+			{Length: 3, Content: []byte("www")},
+			{Length: 7, Content: []byte("example")},
+			{Length: 3, Content: []byte("com")},
 		},
 	}
 
@@ -327,8 +327,8 @@ func TestDomainNameGetSuffixFrom(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result := domain.getSuffixFrom(test.startIndex)
-			if len(result.labels) != test.expectedLen {
-				t.Errorf("got %d labels, want %d", len(result.labels), test.expectedLen)
+			if len(result.Labels) != test.expectedLen {
+				t.Errorf("got %d labels, want %d", len(result.Labels), test.expectedLen)
 			}
 		})
 	}
@@ -336,10 +336,10 @@ func TestDomainNameGetSuffixFrom(t *testing.T) {
 
 func TestDomainNameGetBytesUpToLabel(t *testing.T) {
 	domain := &DomainName{
-		labels: []Label{
-			{length: 3, content: []byte("www")},     // 4 bytes (1 + 3)
-			{length: 7, content: []byte("example")}, // 8 bytes (1 + 7)
-			{length: 3, content: []byte("com")},     // 4 bytes (1 + 3)
+		Labels: []Label{
+			{Length: 3, Content: []byte("www")},     // 4 bytes (1 + 3)
+			{Length: 7, Content: []byte("example")}, // 8 bytes (1 + 7)
+			{Length: 3, Content: []byte("com")},     // 4 bytes (1 + 3)
 		},
 	}
 
@@ -414,9 +414,9 @@ func TestDomainNameToBytesWithCompression(t *testing.T) {
 		{
 			name: "simple domain without existing compression",
 			domain: &DomainName{
-				labels: []Label{
-					{length: 4, content: []byte("test")},
-					{length: 3, content: []byte("com")},
+				Labels: []Label{
+					{Length: 4, Content: []byte("test")},
+					{Length: 3, Content: []byte("com")},
 				},
 			},
 			compressionMap:  NewCompressionMap(),
@@ -427,9 +427,9 @@ func TestDomainNameToBytesWithCompression(t *testing.T) {
 		{
 			name: "domain with existing compression for full domain",
 			domain: &DomainName{
-				labels: []Label{
-					{length: 4, content: []byte("test")},
-					{length: 3, content: []byte("com")},
+				Labels: []Label{
+					{Length: 4, Content: []byte("test")},
+					{Length: 3, Content: []byte("com")},
 				},
 			},
 			compressionMap: func() *CompressionMap {
@@ -444,10 +444,10 @@ func TestDomainNameToBytesWithCompression(t *testing.T) {
 		{
 			name: "domain with suffix compression",
 			domain: &DomainName{
-				labels: []Label{
-					{length: 3, content: []byte("www")},
-					{length: 4, content: []byte("test")},
-					{length: 3, content: []byte("com")},
+				Labels: []Label{
+					{Length: 3, Content: []byte("www")},
+					{Length: 4, Content: []byte("test")},
+					{Length: 3, Content: []byte("com")},
 				},
 			},
 			compressionMap: func() *CompressionMap {
@@ -532,8 +532,8 @@ func TestCompressionEdgeCases(t *testing.T) {
 				return
 			}
 
-			if len(result.labels) != test.expectedLabels {
-				t.Errorf("got %d labels, want %d", len(result.labels), test.expectedLabels)
+			if len(result.Labels) != test.expectedLabels {
+				t.Errorf("got %d labels, want %d", len(result.Labels), test.expectedLabels)
 			}
 		})
 	}
@@ -681,8 +681,8 @@ func TestNewDomainNameWithDecompression(t *testing.T) {
 			data:            []byte{0x04, 't', 'e', 's', 't', 0x00},
 			originalMessage: []byte{},
 			expected: &DomainName{
-				labels: []Label{
-					{length: 4, content: []byte("test")},
+				Labels: []Label{
+					{Length: 4, Content: []byte("test")},
 				},
 			},
 			expectedSize: 6,
@@ -701,8 +701,8 @@ func TestNewDomainNameWithDecompression(t *testing.T) {
 			data:            []byte{0xC0, 0x0C}, // pointer to offset 12
 			originalMessage: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 't', 'e', 's', 't', 0x00},
 			expected: &DomainName{
-				labels: []Label{
-					{length: 4, content: []byte("test")},
+				Labels: []Label{
+					{Length: 4, Content: []byte("test")},
 				},
 			},
 			expectedSize: 2,

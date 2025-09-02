@@ -1,10 +1,15 @@
-package dns
+package message
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/vadim-su/dnska/pkg/dns/types"
+	"github.com/vadim-su/dnska/pkg/dns/utils"
+)
 
 // DNSAnswer represents a DNS answer record.
 type DNSAnswer struct {
-	name  DomainName
+	name  utils.DomainName
 	class [2]byte
 	type_ [2]byte
 	ttl   [4]byte
@@ -12,16 +17,16 @@ type DNSAnswer struct {
 }
 
 // Create a new DNS answer
-func NewDNSAnswer(name []byte, class DNSClass, type_ DNSType, ttl uint32, data []byte) (*DNSAnswer, error) {
-	dnsName, _, err := NewDomainName(name)
+func NewDNSAnswer(name []byte, class types.DNSClass, type_ types.DNSType, ttl uint32, data []byte) (*DNSAnswer, error) {
+	dnsName, _, err := utils.NewDomainName(name)
 	if err != nil {
 		return nil, fmt.Errorf("can't create DNS answer: %s", err)
 	}
 
 	return &DNSAnswer{
 		name:  *dnsName,
-		class: dnsTypeClassToBytes(class),
-		type_: dnsTypeClassToBytes(type_),
+		class: types.DnsTypeClassToBytes(class),
+		type_: types.DnsTypeClassToBytes(type_),
 		ttl:   [4]byte{byte(ttl >> 24), byte(ttl >> 16), byte(ttl >> 8), byte(ttl)},
 		data:  data,
 	}, nil
@@ -32,7 +37,7 @@ func NewDNSAnswers(data []byte, count uint16, originalMessage []byte) ([]DNSAnsw
 	resultAnswers := make([]DNSAnswer, 0)
 	answersDataSize := uint16(0)
 	for range count {
-		dnsName, domainDataSize, err := NewDomainNameWithDecompression(data, originalMessage)
+		dnsName, domainDataSize, err := utils.NewDomainNameWithDecompression(data, originalMessage)
 		if err != nil {
 			return nil, 0, fmt.Errorf("can't create DNS question: %s", err)
 		}
@@ -76,7 +81,7 @@ func (d *DNSAnswer) ToBytes() []byte {
 
 // Convert DNS answer to bytes with name compression
 func (d *DNSAnswer) ToBytesWithCompression(
-	compressionMap *CompressionMap,
+	compressionMap *utils.CompressionMap,
 	currentOffset uint16,
 ) []byte {
 	nameBytes := d.name.ToBytesWithCompression(compressionMap, currentOffset)
