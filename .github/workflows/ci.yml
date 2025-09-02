@@ -1,3 +1,5 @@
+# Main CI pipeline - runs comprehensive checks on every push/PR
+# For Go version compatibility testing, see test.yml (runs weekly)
 name: CI
 
 on:
@@ -10,10 +12,37 @@ env:
   GO_VERSION: "1.25"
 
 jobs:
-  ci:
-    name: CI
+  # Formatting check job (Linux only, fast)
+  format:
+    name: Code Formatting
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Check formatting
+        shell: bash
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "The following files are not formatted:"
+            gofmt -s -l .
+            echo "Please run 'gofmt -s -w .' to fix formatting"
+            exit 1
+          fi
+          echo "All Go files are properly formatted"
+
+  # Tests on all platforms
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,6 +68,35 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run tests with coverage
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage artifact (for coverage job)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
+
+  # Dependency validation (Linux only)
+  deps:
+    name: Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download dependencies
+        run: go mod download
+
       - name: Check go mod tidy
         run: |
           go mod tidy
@@ -48,19 +106,24 @@ jobs:
             exit 1
           fi
 
-      - name: Check formatting
-        run: |
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-            echo "The following files are not formatted:"
-            gofmt -s -l .
-            exit 1
-          fi
+  # Coverage check (Linux only)
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Run go vet
-        run: go vet ./...
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-      - name: Run tests with coverage
-        run: go test -v -race -coverprofile=coverage.out ./...
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
 
       - name: Check coverage threshold
         run: |
@@ -76,11 +139,42 @@ jobs:
         with:
           file: ./coverage.out
 
-      - name: Build check
+  # Build check (Linux only)
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build for different platforms
         run: |
           GOOS=linux GOARCH=amd64 go build ./...
           GOOS=windows GOARCH=amd64 go build ./...
           GOOS=darwin GOARCH=amd64 go build ./...
+
+  # Security check (Linux only)
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Run vulnerability check
         run: |
