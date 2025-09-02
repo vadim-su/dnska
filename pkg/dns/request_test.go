@@ -1289,20 +1289,6 @@ func TestDNSRequestToBytesWithCompressionVsNormal(t *testing.T) {
 	}
 }
 
-func TestDNSRequestToBytesWithCompressionNilRequest(t *testing.T) {
-	// Test that method doesn't panic with nil request
-	defer func() {
-		if recovery := recover(); recovery != nil {
-			t.Errorf("ToBytesWithCompression panicked with nil request: %v", recovery)
-		}
-	}()
-
-	var nilRequest *DNSRequest
-	if nilRequest != nil {
-		_ = nilRequest.ToBytesWithCompression()
-	}
-}
-
 func TestDNSRequestToBytesWithCompressionComplexCompression(t *testing.T) {
 	// Test with many repeated domain names to verify compression effectiveness
 	request := &DNSRequest{
