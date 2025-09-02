@@ -1,5 +1,6 @@
 package dns
 
+// DNSFlag represents the flags in a DNS header
 type DNSHeader struct {
 	ID                    uint16
 	Flags                 DNSFlag // 2 bytes
@@ -9,6 +10,7 @@ type DNSHeader struct {
 	AdditionalRecordCount uint16
 }
 
+// Create a new DNS header
 func NewDNSHeader(
 	id uint16,
 	flags DNSFlag,

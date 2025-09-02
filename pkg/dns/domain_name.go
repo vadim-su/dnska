@@ -6,11 +6,13 @@ const (
 	NULL_BYTE = byte('\x00')
 )
 
+// Label represents a single label in a domain name
 type Label struct {
 	length  uint8
 	content []byte
 }
 
+// ToBytes converts the Label to its byte representation
 func (l *Label) ToBytes() []byte {
 	label := make([]byte, l.length+1)
 
@@ -20,10 +22,12 @@ func (l *Label) ToBytes() []byte {
 	return label
 }
 
+// DomainName represents a full domain name composed of multiple labels
 type DomainName struct {
 	labels []Label
 }
 
+// NewDomainName creates a new DomainName from raw byte data
 func NewDomainName(data []byte) (*DomainName, uint16, error) {
 	var length uint8
 	var labels []Label
@@ -51,6 +55,7 @@ func NewDomainName(data []byte) (*DomainName, uint16, error) {
 	}
 }
 
+// ToBytes converts the DomainName to its byte representation
 func (d *DomainName) ToBytes() []byte {
 	totalBytes := uint(1) // Count ending byte
 
@@ -72,6 +77,7 @@ func (d *DomainName) ToBytes() []byte {
 	return domainName
 }
 
+// ToBytesWithCompression converts the DomainName to bytes using DNS name compression
 func (d *DomainName) ToBytesWithCompression(
 	compressionMap *CompressionMap,
 	currentOffset uint16,
@@ -120,6 +126,7 @@ func (d *DomainName) ToBytesWithCompression(
 	return fullBytes
 }
 
+// String converts the DomainName to its string representation
 func (d *DomainName) String() string {
 	if len(d.labels) == 0 {
 		return "."
@@ -132,6 +139,7 @@ func (d *DomainName) String() string {
 	return result
 }
 
+// getSuffixFrom returns a new DomainName starting from the specified label index
 func (d *DomainName) getSuffixFrom(startIndex int) *DomainName {
 	if startIndex >= len(d.labels) {
 		return &DomainName{labels: []Label{}}
@@ -139,6 +147,7 @@ func (d *DomainName) getSuffixFrom(startIndex int) *DomainName {
 	return &DomainName{labels: d.labels[startIndex:]}
 }
 
+// getBytesUpToLabel calculates the byte size of the domain name up to the specified label index
 func (d *DomainName) getBytesUpToLabel(labelIndex int) uint16 {
 	size := uint16(0)
 	for idx := range labelIndex {
@@ -147,6 +156,7 @@ func (d *DomainName) getBytesUpToLabel(labelIndex int) uint16 {
 	return size
 }
 
+// NewDomainNameWithDecompression creates a DomainName from raw byte data, handling DNS name compression
 func NewDomainNameWithDecompression(
 	data []byte,
 	originalMessage []byte,

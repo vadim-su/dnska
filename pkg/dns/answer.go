@@ -2,6 +2,7 @@ package dns
 
 import "fmt"
 
+// DNSAnswer represents a DNS answer record.
 type DNSAnswer struct {
 	name  DomainName
 	class [2]byte
@@ -10,6 +11,7 @@ type DNSAnswer struct {
 	data  []byte // RDATA
 }
 
+// Create a new DNS answer
 func NewDNSAnswer(name []byte, class DNSClass, type_ DNSType, ttl uint32, data []byte) (*DNSAnswer, error) {
 	dnsName, _, err := NewDomainName(name)
 	if err != nil {
@@ -25,6 +27,7 @@ func NewDNSAnswer(name []byte, class DNSClass, type_ DNSType, ttl uint32, data [
 	}, nil
 }
 
+// Create multiple DNS answers from raw data
 func NewDNSAnswers(data []byte, count uint16, originalMessage []byte) ([]DNSAnswer, uint16, error) {
 	resultAnswers := make([]DNSAnswer, 0)
 	answersDataSize := uint16(0)
@@ -57,6 +60,7 @@ func NewDNSAnswers(data []byte, count uint16, originalMessage []byte) ([]DNSAnsw
 	return resultAnswers, answersDataSize, nil
 }
 
+// Convert DNS answer to bytes
 func (d *DNSAnswer) ToBytes() []byte {
 	question := d.name.ToBytes()
 	data_length := []byte{byte(len(d.data) >> 8), byte(len(d.data) & 0xFF)}
@@ -70,6 +74,7 @@ func (d *DNSAnswer) ToBytes() []byte {
 	return question
 }
 
+// Convert DNS answer to bytes with name compression
 func (d *DNSAnswer) ToBytesWithCompression(
 	compressionMap *CompressionMap,
 	currentOffset uint16,

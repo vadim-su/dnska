@@ -1,11 +1,13 @@
 package dns
 
+// DNSResponse represents a full DNS response message.
 type DNSResponse struct {
 	Header    DNSHeader
 	Questions []DNSQuestion
 	Answers   []DNSAnswer
 }
 
+// Create a new DNS response from raw byte data
 func NewDNSResponse(data []byte) (*DNSResponse, error) {
 	originalMessage := data // Keep reference to original message for decompression
 
@@ -39,6 +41,7 @@ func NewDNSResponse(data []byte) (*DNSResponse, error) {
 	}, nil
 }
 
+// Generate a DNS response based on the request flags and provided questions and answers
 func GenerateDNSResponse(id uint16, reqFlags DNSFlag, questions []DNSQuestion, answers []DNSAnswer) *DNSResponse {
 	flags := PrepareResponseFlags(reqFlags)
 	return &DNSResponse{
@@ -55,6 +58,7 @@ func GenerateDNSResponse(id uint16, reqFlags DNSFlag, questions []DNSQuestion, a
 	}
 }
 
+// Generate a DNS query with the given ID and questions
 func GenerateDNSQuery(id uint16, questions []DNSQuestion) *DNSResponse {
 	// Create proper query flags: standard query with recursion desired
 	flags := FLAG_QR_QUERY | FLAG_OPCODE_STANDARD | FLAG_RD_RECURSION_DESIRED
@@ -68,10 +72,11 @@ func GenerateDNSQuery(id uint16, questions []DNSQuestion) *DNSResponse {
 			0,
 		},
 		questions,
-		nil, // No answers in a query
+		nil,
 	}
 }
 
+// PrepareResponseFlags prepares the response flags based on the request flags
 func PrepareResponseFlags(reqFlags DNSFlag) DNSFlag {
 	respFlags := reqFlags | FLAG_QR_RESPONSE
 
@@ -84,6 +89,7 @@ func PrepareResponseFlags(reqFlags DNSFlag) DNSFlag {
 	return respFlags
 }
 
+// Convert DNSResponse to byte array
 func (d *DNSResponse) ToBytes() []byte {
 	resp := d.Header.ToBytes()
 
@@ -98,11 +104,11 @@ func (d *DNSResponse) ToBytes() []byte {
 	return resp
 }
 
+// Convert DNSResponse to byte array with name compression
 func (d *DNSResponse) ToBytesWithCompression() []byte {
 	compressionMap := NewCompressionMap()
 	result := make([]byte, 0, 512)
 
-	// Add header (12 bytes)
 	headerBytes := d.Header.ToBytes()
 	result = append(result, headerBytes...)
 	currentOffset := uint16(12)

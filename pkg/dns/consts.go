@@ -37,11 +37,13 @@ const (
 // DNS Header flag constants
 type DNSFlag uint16
 
+// Bit positions for various flags
 const (
 	BIT_OPCODE_START = 11 // OPCODE starts at bit 11
 	BIT_RCODE_START  = 0  // RCODE starts at bit 0
 )
 
+// DNS Flag constants
 const (
 	FLAG_QR_RESPONSE = DNSFlag(1 << 15) // Query/Response
 	FLAG_QR_QUERY    = DNSFlag(0 << 15) // Query/Response

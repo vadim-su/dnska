@@ -2,12 +2,14 @@ package dns
 
 import "fmt"
 
+// DNSRequest represents a full DNS request message.
 type DNSRequest struct {
 	Header    DNSHeader
 	Questions []DNSQuestion
 	Answers   []DNSAnswer
 }
 
+// Create a new DNS request from raw byte data
 func NewDNSRequest(data []byte) (*DNSRequest, error) {
 	header := DNSHeader{
 		ID:                    uint16(data[0])<<8 | uint16(data[1]),

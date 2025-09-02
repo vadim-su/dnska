@@ -2,12 +2,14 @@ package dns
 
 import "fmt"
 
+// DNSQuestion represents a DNS question record.
 type DNSQuestion struct {
 	Name  DomainName
 	Class [2]byte
 	Type  [2]byte
 }
 
+// Create a new DNS question
 func NewDNSQuestions(data []byte, count uint16, originalMessage []byte) ([]DNSQuestion, uint16, error) {
 	resultQuestions := make([]DNSQuestion, 0)
 	questionsDataSize := uint16(0)
@@ -41,6 +43,7 @@ func NewDNSQuestions(data []byte, count uint16, originalMessage []byte) ([]DNSQu
 	return resultQuestions, questionsDataSize, nil
 }
 
+// Convert the DNS question to its byte representation
 func (d *DNSQuestion) ToBytes() []byte {
 	question := d.Name.ToBytes()
 
@@ -50,6 +53,7 @@ func (d *DNSQuestion) ToBytes() []byte {
 	return question
 }
 
+// Convert the DNS question to its byte representation with compression
 func (d *DNSQuestion) ToBytesWithCompression(
 	compressionMap *CompressionMap,
 	currentOffset uint16,
