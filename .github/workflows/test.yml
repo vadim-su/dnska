@@ -1,9 +1,6 @@
 name: Go Version Compatibility
 
 on:
-  # Run on schedule to check compatibility with new Go versions
-  schedule:
-    - cron: "0 2 * * 1" # Weekly on Monday at 2 AM UTC
   # Also allow manual trigger
   workflow_dispatch:
   # Run on changes to go.mod or CI files
