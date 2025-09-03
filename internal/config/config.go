@@ -13,9 +13,7 @@ type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 	Resolver ResolverConfig `yaml:"resolver"`
 	Storage  StorageConfig  `yaml:"storage"`
-	API      APIConfig      `yaml:"api"`
 	Logging  LoggingConfig  `yaml:"logging"`
-	Zones    []ZoneConfig   `yaml:"zones"`
 	Cache    CacheConfig    `yaml:"cache"`
 }
 
@@ -43,18 +41,9 @@ type ResolverConfig struct {
 
 // StorageConfig holds storage backend configuration
 type StorageConfig struct {
-	Type     string `yaml:"type"` // "memory", "sqlite", "postgres", "redis"
+	Type     string `yaml:"type"` // "memory", "surrealdb"
 	DSN      string `yaml:"dsn"`
 	MaxConns int    `yaml:"max_conns"`
-}
-
-// APIConfig holds REST/gRPC API configuration
-type APIConfig struct {
-	Enabled     bool   `yaml:"enabled"`
-	Address     string `yaml:"address"`
-	EnableREST  bool   `yaml:"enable_rest"`
-	EnableGRPC  bool   `yaml:"enable_grpc"`
-	AuthEnabled bool   `yaml:"auth_enabled"`
 }
 
 // LoggingConfig holds logging configuration
@@ -62,22 +51,6 @@ type LoggingConfig struct {
 	Level  string `yaml:"level"`  // "debug", "info", "warn", "error"
 	Format string `yaml:"format"` // "json", "text"
 	Output string `yaml:"output"` // "stdout", "stderr", or file path
-}
-
-// ZoneConfig holds zone-specific configuration
-type ZoneConfig struct {
-	Name    string            `yaml:"name"`
-	File    string            `yaml:"file"`
-	Records []RecordConfig    `yaml:"records"`
-	Options map[string]string `yaml:"options"`
-}
-
-// RecordConfig holds individual record configuration
-type RecordConfig struct {
-	Name  string `yaml:"name"`
-	Type  string `yaml:"type"` // "A", "AAAA", "CNAME", "MX", etc.
-	Value string `yaml:"value"`
-	TTL   uint32 `yaml:"ttl"`
 }
 
 // CacheConfig holds cache configuration
@@ -106,23 +79,12 @@ func DefaultConfig() *Config {
 			Timeout:        5 * time.Second,
 			MaxRetries:     3,
 			ForwardServers: []string{"8.8.8.8:53", "8.8.4.4:53"},
-			RootServers: []string{
-				"a.root-servers.net:53",
-				"b.root-servers.net:53",
-				"c.root-servers.net:53",
-			},
+			RootServers:    []string{},
 			RecursionDepth: 10,
 		},
 		Storage: StorageConfig{
 			Type:     "memory",
 			MaxConns: 10,
-		},
-		API: APIConfig{
-			Enabled:     false,
-			Address:     "127.0.0.1:8080",
-			EnableREST:  true,
-			EnableGRPC:  false,
-			AuthEnabled: false,
 		},
 		Logging: LoggingConfig{
 			Level:  "info",

@@ -22,8 +22,6 @@ func NewLoader() *Loader {
 	return &Loader{
 		configPaths: []string{
 			"./dnska.yaml",
-			"./configs/dnska.yaml",
-			"/etc/dnska/dnska.yaml",
 		},
 		envPrefix: "DNSKA_",
 	}
@@ -144,16 +142,6 @@ func (l *Loader) loadFromEnv(config *Config) error {
 	}
 	if dsn := os.Getenv(l.envPrefix + "STORAGE_DSN"); dsn != "" {
 		config.Storage.DSN = dsn
-	}
-
-	// API configuration
-	if addr := os.Getenv(l.envPrefix + "API_ADDRESS"); addr != "" {
-		config.API.Address = addr
-	}
-	if enabled := os.Getenv(l.envPrefix + "API_ENABLED"); enabled != "" {
-		if b, err := strconv.ParseBool(enabled); err == nil {
-			config.API.Enabled = b
-		}
 	}
 
 	// Logging configuration

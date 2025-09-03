@@ -37,11 +37,6 @@ func (v *Validator) ValidateConfig(config *Config) error {
 		return fmt.Errorf("storage config validation failed: %w", err)
 	}
 
-	// Validate API configuration
-	if err := v.ValidateAPIConfig(&config.API); err != nil {
-		return fmt.Errorf("API config validation failed: %w", err)
-	}
-
 	// Validate logging configuration
 	if err := v.ValidateLoggingConfig(&config.Logging); err != nil {
 		return fmt.Errorf("logging config validation failed: %w", err)
@@ -50,13 +45,6 @@ func (v *Validator) ValidateConfig(config *Config) error {
 	// Validate cache configuration
 	if err := v.ValidateCacheConfig(&config.Cache); err != nil {
 		return fmt.Errorf("cache config validation failed: %w", err)
-	}
-
-	// Validate zones
-	for i, zone := range config.Zones {
-		if err := v.ValidateZoneConfig(&zone); err != nil {
-			return fmt.Errorf("zone %d (%s) validation failed: %w", i, zone.Name, err)
-		}
 	}
 
 	return nil
@@ -191,33 +179,6 @@ func (v *Validator) ValidateStorageConfig(config *StorageConfig) error {
 	return nil
 }
 
-// ValidateAPIConfig validates API-specific configuration
-func (v *Validator) ValidateAPIConfig(config *APIConfig) error {
-	if !config.Enabled {
-		return nil // Skip validation if API is disabled
-	}
-
-	// Validate address
-	if config.Address == "" {
-		return fmt.Errorf("API address cannot be empty when API is enabled")
-	}
-
-	host, port, err := net.SplitHostPort(config.Address)
-	if err != nil {
-		return fmt.Errorf("invalid API address format: %w", err)
-	}
-
-	if net.ParseIP(host) == nil && host != "localhost" && host != "" {
-		return fmt.Errorf("invalid API host: %s", host)
-	}
-
-	if portNum, err := strconv.Atoi(port); err != nil || portNum < 1 || portNum > 65535 {
-		return fmt.Errorf("invalid API port: %s", port)
-	}
-
-	return nil
-}
-
 // ValidateLoggingConfig validates logging-specific configuration
 func (v *Validator) ValidateLoggingConfig(config *LoggingConfig) error {
 	// Validate log level
@@ -273,91 +234,6 @@ func (v *Validator) ValidateCacheConfig(config *CacheConfig) error {
 	return nil
 }
 
-// ValidateZoneConfig validates zone-specific configuration
-func (v *Validator) ValidateZoneConfig(config *ZoneConfig) error {
-	// Validate zone name
-	if config.Name == "" {
-		return fmt.Errorf("zone name cannot be empty")
-	}
-
-	// Basic domain name validation
-	if !v.isValidDomainName(config.Name) {
-		return fmt.Errorf("invalid zone name: %s", config.Name)
-	}
-
-	// Validate zone file if specified
-	if config.File != "" {
-		if !strings.HasSuffix(config.File, ".zone") {
-			return fmt.Errorf("zone file must have .zone extension: %s", config.File)
-		}
-	}
-
-	// Validate records
-	for i, record := range config.Records {
-		if err := v.ValidateRecordConfig(&record); err != nil {
-			return fmt.Errorf("record %d validation failed: %w", i, err)
-		}
-	}
-
-	return nil
-}
-
-// ValidateRecordConfig validates individual record configuration
-func (v *Validator) ValidateRecordConfig(config *RecordConfig) error {
-	// Validate record name
-	if config.Name == "" {
-		return fmt.Errorf("record name cannot be empty")
-	}
-
-	// Validate record type
-	validTypes := map[string]bool{
-		"A":     true,
-		"AAAA":  true,
-		"CNAME": true,
-		"MX":    true,
-		"NS":    true,
-		"SOA":   true,
-		"TXT":   true,
-		"PTR":   true,
-	}
-	if !validTypes[strings.ToUpper(config.Type)] {
-		return fmt.Errorf("invalid record type: %s", config.Type)
-	}
-
-	// Validate record value
-	if config.Value == "" {
-		return fmt.Errorf("record value cannot be empty")
-	}
-
-	// Type-specific validation
-	switch strings.ToUpper(config.Type) {
-	case "A":
-		if net.ParseIP(config.Value) == nil || net.ParseIP(config.Value).To4() == nil {
-			return fmt.Errorf("invalid IPv4 address for A record: %s", config.Value)
-		}
-	case "AAAA":
-		if net.ParseIP(config.Value) == nil || net.ParseIP(config.Value).To16() == nil {
-			return fmt.Errorf("invalid IPv6 address for AAAA record: %s", config.Value)
-		}
-	case "MX":
-		// MX record format: preference space domain
-		parts := strings.Fields(config.Value)
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid MX record format (expected: preference domain): %s", config.Value)
-		}
-		if _, err := strconv.Atoi(parts[0]); err != nil {
-			return fmt.Errorf("invalid MX preference (must be integer): %s", parts[0])
-		}
-	}
-
-	// Validate TTL
-	if config.TTL == 0 {
-		return fmt.Errorf("TTL cannot be zero")
-	}
-
-	return nil
-}
-
 // validateServerAddress validates a DNS server address
 func (v *Validator) validateServerAddress(address string) error {
 	if address == "" {
@@ -369,7 +245,7 @@ func (v *Validator) validateServerAddress(address string) error {
 		return fmt.Errorf("invalid address format: %w", err)
 	}
 
-	if net.ParseIP(host) == nil && host != "localhost" {
+	if net.ParseIP(host) == nil && host != "localhost" && host != "" {
 		return fmt.Errorf("invalid host: %s", host)
 	}
 
@@ -389,8 +265,8 @@ func (v *Validator) isValidDomainName(domain string) bool {
 	// Remove trailing dot if present
 	domain = strings.TrimSuffix(domain, ".")
 
-	labels := strings.Split(domain, ".")
-	for _, label := range labels {
+	labels := strings.SplitSeq(domain, ".")
+	for label := range labels {
 		if len(label) == 0 || len(label) > 63 {
 			return false
 		}

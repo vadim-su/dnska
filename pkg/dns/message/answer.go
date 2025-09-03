@@ -45,21 +45,35 @@ func NewDNSAnswers(data []byte, count uint16, originalMessage []byte) ([]DNSAnsw
 
 		data = data[domainDataSize:] // Remove domain name data
 
+		// Check if we have enough data for the fixed fields (10 bytes)
+		if len(data) < 10 {
+			return nil, 0, fmt.Errorf("insufficient data for DNS answer fields: need 10 bytes, have %d", len(data))
+		}
+
 		class := [2]byte{data[0], data[1]}
 		type_ := [2]byte{data[2], data[3]}
 		ttl := [4]byte{data[4], data[5], data[6], data[7]}
 
 		dataLength := uint16(data[8])<<8 | uint16(data[9])
+
+		// Check if we have enough data for the answer data
+		if len(data) < int(10+dataLength) {
+			return nil, 0, fmt.Errorf("insufficient data for DNS answer: need %d bytes, have %d", 10+dataLength, len(data))
+		}
+
 		answersDataSize += 10 + dataLength
-		data := data[10 : 10+dataLength]
+		answerData := data[10 : 10+dataLength]
 
 		resultAnswers = append(resultAnswers, DNSAnswer{
 			*dnsName,
 			class,
 			type_,
 			ttl,
-			data,
+			answerData,
 		})
+
+		// Move to next answer
+		data = data[10+dataLength:]
 	}
 
 	return resultAnswers, answersDataSize, nil
