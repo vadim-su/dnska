@@ -34,6 +34,15 @@ func NewMemoryStorage(validationConfig *ValidationConfig) (*MemoryStorage, error
 }
 
 // GetRecords returns all records for a given domain name and record type
+// normalizeDomainName ensures the domain name has a trailing dot
+func normalizeDomainName(name string) string {
+	name = strings.ToLower(name)
+	if name != "" && name[len(name)-1] != '.' {
+		name = name + "."
+	}
+	return name
+}
+
 func (s *MemoryStorage) GetRecords(ctx context.Context, name string, recordType types.DNSType) ([]records.DNSRecord, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -47,7 +56,7 @@ func (s *MemoryStorage) GetRecords(ctx context.Context, name string, recordType 
 		return nil, err
 	}
 
-	name = strings.ToLower(name)
+	name = normalizeDomainName(name)
 
 	nameRecords, exists := s.records[name]
 	if !exists {
@@ -150,7 +159,7 @@ func (s *MemoryStorage) DeleteRecord(ctx context.Context, name string, recordTyp
 		return ErrStorageClosed
 	}
 
-	name = strings.ToLower(name)
+	name = normalizeDomainName(name)
 
 	nameRecords, exists := s.records[name]
 	if !exists {
@@ -220,7 +229,7 @@ func (s *MemoryStorage) ListRecordsByZone(ctx context.Context, zone string) ([]r
 		return nil, ErrStorageClosed
 	}
 
-	zone = strings.ToLower(zone)
+	zone = normalizeDomainName(zone)
 	var zoneRecords []records.DNSRecord
 
 	for name, nameRecords := range s.records {
@@ -264,15 +273,29 @@ func (s *MemoryStorage) QueryRecords(ctx context.Context, options QueryOptions) 
 	// Collect matching records
 	var results []records.DNSRecord
 
+	// Normalize query options
+	queryName := options.Name
+	if queryName != "" {
+		queryName = normalizeDomainName(queryName)
+	}
+	queryPrefix := options.NamePrefix
+	if queryPrefix != "" {
+		queryPrefix = normalizeDomainName(queryPrefix)
+	}
+	queryZone := options.Zone
+	if queryZone != "" {
+		queryZone = normalizeDomainName(queryZone)
+	}
+
 	for name, nameRecords := range s.records {
 		// Apply name filters
-		if options.Name != "" && !strings.EqualFold(name, options.Name) {
+		if queryName != "" && !strings.EqualFold(name, queryName) {
 			continue
 		}
-		if options.NamePrefix != "" && !strings.HasPrefix(strings.ToLower(name), strings.ToLower(options.NamePrefix)) {
+		if queryPrefix != "" && !strings.HasPrefix(strings.ToLower(name), strings.ToLower(queryPrefix)) {
 			continue
 		}
-		if options.Zone != "" && !s.isInZone(name, options.Zone) {
+		if queryZone != "" && !s.isInZone(name, queryZone) {
 			continue
 		}
 
@@ -354,7 +377,7 @@ func (s *MemoryStorage) BatchDeleteRecords(ctx context.Context, names []string, 
 
 	deletedCount := 0
 	for _, name := range names {
-		name = strings.ToLower(name)
+		name = normalizeDomainName(name)
 
 		if nameRecords, exists := s.records[name]; exists {
 			if recordType == 0 {

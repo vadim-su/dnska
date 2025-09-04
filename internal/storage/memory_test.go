@@ -293,9 +293,9 @@ func TestMemoryStorage_QueryOptions(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		assert.Len(t, results, 3)
-		assert.Equal(t, "alpha.example.com", results[0].Name())
-		assert.Equal(t, "beta.example.com", results[1].Name())
-		assert.Equal(t, "gamma.example.com", results[2].Name())
+		assert.Equal(t, "alpha.example.com.", results[0].Name())
+		assert.Equal(t, "beta.example.com.", results[1].Name())
+		assert.Equal(t, "gamma.example.com.", results[2].Name())
 	})
 
 	t.Run("sort by name descending", func(t *testing.T) {
@@ -306,9 +306,9 @@ func TestMemoryStorage_QueryOptions(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		assert.Len(t, results, 3)
-		assert.Equal(t, "gamma.example.com", results[0].Name())
-		assert.Equal(t, "beta.example.com", results[1].Name())
-		assert.Equal(t, "alpha.example.com", results[2].Name())
+		assert.Equal(t, "gamma.example.com.", results[0].Name())
+		assert.Equal(t, "beta.example.com.", results[1].Name())
+		assert.Equal(t, "alpha.example.com.", results[2].Name())
 	})
 
 	t.Run("sort by TTL", func(t *testing.T) {

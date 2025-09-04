@@ -55,7 +55,7 @@ func (s *StorageTestSuite) TestBasicCRUD() {
 	retrieved, err := s.storage.GetRecord(ctx, "test.example.com", types.TYPE_A)
 	assert.NoError(t, err, "Should retrieve A record without error")
 	assert.NotNil(t, retrieved)
-	assert.Equal(t, "test.example.com", retrieved.Name())
+	assert.Equal(t, "test.example.com.", retrieved.Name())
 	assert.Equal(t, types.TYPE_A, retrieved.Type())
 
 	// Test adding second A record (DNS allows multiple A records)

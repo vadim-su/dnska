@@ -152,8 +152,11 @@ func (s *Server) Start() error {
 
 	if s.config.Server.EnableTCP {
 		if err := s.startTCP(); err != nil {
-			if s.udpConn != nil {
-				s.udpConn.Close()
+			s.mu.Lock()
+			udpConn := s.udpConn
+			s.mu.Unlock()
+			if udpConn != nil {
+				udpConn.Close()
 			}
 			return fmt.Errorf("failed to start TCP server: %w", err)
 		}
@@ -174,10 +177,14 @@ func (s *Server) startUDP() error {
 		return fmt.Errorf("failed to resolve UDP address: %w", err)
 	}
 
-	s.udpConn, err = net.ListenUDP("udp", addr)
+	udpConn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		return fmt.Errorf("failed to listen on UDP: %w", err)
 	}
+
+	s.mu.Lock()
+	s.udpConn = udpConn
+	s.mu.Unlock()
 
 	s.wg.Add(1)
 	go s.handleUDP()
@@ -191,10 +198,14 @@ func (s *Server) startTCP() error {
 		return fmt.Errorf("failed to resolve TCP address: %w", err)
 	}
 
-	s.tcpListener, err = net.ListenTCP("tcp", addr)
+	tcpListener, err := net.ListenTCP("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("failed to listen on TCP: %w", err)
 	}
+
+	s.mu.Lock()
+	s.tcpListener = tcpListener
+	s.mu.Unlock()
 
 	s.wg.Add(1)
 	go s.handleTCP()
@@ -433,20 +444,24 @@ func (s *Server) Close() error {
 		return fmt.Errorf("server already closed")
 	}
 	s.closed = true
+
+	// Keep references to connections while holding the lock
+	udpConn := s.udpConn
+	tcpListener := s.tcpListener
 	s.mu.Unlock()
 
 	s.cancel()
 
 	var errs []error
 
-	if s.udpConn != nil {
-		if err := s.udpConn.Close(); err != nil {
+	if udpConn != nil {
+		if err := udpConn.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("failed to close UDP connection: %w", err))
 		}
 	}
 
-	if s.tcpListener != nil {
-		if err := s.tcpListener.Close(); err != nil {
+	if tcpListener != nil {
+		if err := tcpListener.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("failed to close TCP listener: %w", err))
 		}
 	}

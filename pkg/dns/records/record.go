@@ -29,6 +29,10 @@ type BaseRecord struct {
 
 // NewBaseRecord creates a new base record with common fields
 func NewBaseRecord(name string, class types.DNSClass, ttl uint32) BaseRecord {
+	// Normalize domain name - ensure trailing dot
+	if name != "" && name[len(name)-1] != '.' {
+		name = name + "."
+	}
 	return BaseRecord{
 		name:  name,
 		class: class,
