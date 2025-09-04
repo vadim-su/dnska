@@ -120,10 +120,7 @@ func (l *Loader) loadFromEnv(config *Config) error {
 		}
 	}
 
-	// Resolver configuration
-	if resolverType := os.Getenv(l.envPrefix + "RESOLVER_TYPE"); resolverType != "" {
-		config.Resolver.Type = resolverType
-	}
+	// Resolver configuration - type no longer configurable
 	if timeout := os.Getenv(l.envPrefix + "RESOLVER_TIMEOUT"); timeout != "" {
 		if d, err := time.ParseDuration(timeout); err == nil {
 			config.Resolver.Timeout = d

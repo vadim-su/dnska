@@ -88,15 +88,7 @@ func (v *Validator) ValidateServerConfig(config *ServerConfig) error {
 
 // ValidateResolverConfig validates resolver-specific configuration
 func (v *Validator) ValidateResolverConfig(config *ResolverConfig) error {
-	// Validate resolver type
-	validTypes := map[string]bool{
-		"recursive": true,
-		"forward":   true,
-		"cache":     true,
-	}
-	if !validTypes[config.Type] {
-		return fmt.Errorf("invalid resolver type: %s (must be recursive, forward, or cache)", config.Type)
-	}
+	// No type validation needed - always using cached forward resolver
 
 	// Validate timeout
 	if config.Timeout <= 0 {

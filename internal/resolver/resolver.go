@@ -48,11 +48,7 @@ func DefaultResolverConfig() *ResolverConfig {
 		CacheEnabled:   true,
 		CacheTTL:       300 * time.Second,                    // 5 minutes
 		ForwardServers: []string{"8.8.8.8:53", "8.8.4.4:53"}, // Google DNS
-		RootServers: []string{
-			"a.root-servers.net:53",
-			"b.root-servers.net:53",
-			"c.root-servers.net:53",
-		},
+		RootServers:    []string{},
 		RecursionDepth: 10,
 	}
 }

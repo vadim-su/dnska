@@ -31,7 +31,6 @@ type ServerConfig struct {
 
 // ResolverConfig holds resolver-specific configuration
 type ResolverConfig struct {
-	Type           string        `yaml:"type"` // "recursive", "forward", "cache"
 	Timeout        time.Duration `yaml:"timeout"`
 	MaxRetries     int           `yaml:"max_retries"`
 	ForwardServers []string      `yaml:"forward_servers"`
@@ -75,7 +74,6 @@ func DefaultConfig() *Config {
 			EnableHealth:   true,
 		},
 		Resolver: ResolverConfig{
-			Type:           "forward",
 			Timeout:        5 * time.Second,
 			MaxRetries:     3,
 			ForwardServers: []string{"8.8.8.8:53", "8.8.4.4:53"},
@@ -138,10 +136,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("server address cannot be empty")
 	}
 
-	// Validate resolver config
-	if c.Resolver.Type != "recursive" && c.Resolver.Type != "forward" && c.Resolver.Type != "cache" {
-		return fmt.Errorf("invalid resolver type: %s", c.Resolver.Type)
-	}
+	// Validate resolver config - no type check needed anymore
 
 	// Validate storage config
 	if c.Storage.Type != "memory" && c.Storage.Type != "sqlite" && c.Storage.Type != "postgres" && c.Storage.Type != "redis" {
@@ -173,19 +168,19 @@ func (c *Config) GetServerAddress() string {
 	return c.Server.Address
 }
 
-// IsResolverRecursive returns true if resolver type is recursive
+// IsResolverRecursive returns true if resolver type is recursive - deprecated, always false
 func (c *Config) IsResolverRecursive() bool {
-	return c.Resolver.Type == "recursive"
+	return false
 }
 
-// IsResolverForward returns true if resolver type is forward
+// IsResolverForward returns true if resolver type is forward - deprecated, always true
 func (c *Config) IsResolverForward() bool {
-	return c.Resolver.Type == "forward"
+	return true
 }
 
-// IsResolverCache returns true if resolver type is cache
+// IsResolverCache returns true if resolver type is cache - deprecated, always true
 func (c *Config) IsResolverCache() bool {
-	return c.Resolver.Type == "cache"
+	return true
 }
 
 // IsStorageMemory returns true if storage type is memory

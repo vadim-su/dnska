@@ -114,35 +114,20 @@ func (s *Server) initResolver() error {
 	resolverConfig := &resolver.ResolverConfig{
 		Timeout:        s.config.Resolver.Timeout,
 		MaxRetries:     s.config.Resolver.MaxRetries,
-		CacheEnabled:   s.config.Cache.Enabled,
 		CacheTTL:       s.config.Cache.TTL,
 		ForwardServers: s.config.Resolver.ForwardServers,
 		RootServers:    s.config.Resolver.RootServers,
 		RecursionDepth: s.config.Resolver.RecursionDepth,
 	}
 
-	var baseResolver resolver.Resolver
-	var err error
-
-	switch s.config.Resolver.Type {
-	case "recursive":
-		baseResolver, err = resolver.NewRecursiveResolver(resolverConfig)
-	case "forward":
-		baseResolver, err = resolver.NewForwardResolver(resolverConfig)
-	default:
-		baseResolver, err = resolver.NewForwardResolver(resolverConfig)
-	}
-
+	forwardResolver, err := resolver.NewForwardResolver(resolverConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create %s resolver: %w", s.config.Resolver.Type, err)
+		return fmt.Errorf("failed to create forward resolver: %w", err)
 	}
 
-	if s.config.Cache.Enabled {
-		s.resolver = resolver.NewCacheResolver(resolverConfig, baseResolver)
-	} else {
-		s.resolver = baseResolver
-	}
+	s.resolver = resolver.NewCacheResolver(resolverConfig, forwardResolver)
 
+	log.Printf("Resolver initialized: cached forward resolver with servers %v", s.config.Resolver.ForwardServers)
 	return nil
 }
 
@@ -532,7 +517,7 @@ func (s *Server) GetStats() ServerStats {
 	return ServerStats{
 		Running: s.IsRunning(),
 		Address: s.config.Server.Address,
-		Type:    s.config.Resolver.Type,
+		Type:    "cached-forward", // Always using cached forward resolver
 	}
 }
 

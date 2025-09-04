@@ -11,10 +11,11 @@ import (
 
 // Resolve performs DNS resolution with caching
 func (r *CacheResolver) Resolve(ctx context.Context, question message.DNSQuestion) ([]message.DNSAnswer, error) {
-	cacheKey := r.generateCacheKey(question)
+	var cacheKey string
 
 	// Check cache first
 	if r.config.CacheEnabled {
+		cacheKey = r.generateCacheKey(question)
 		if entry := r.getFromCache(cacheKey); entry != nil {
 			return entry.Answers, nil
 		}
